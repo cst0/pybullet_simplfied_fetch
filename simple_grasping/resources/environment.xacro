@@ -66,6 +66,10 @@
     </joint>
 
     <link name="gripper_base">
+        <intertial>
+            <origin rpy="0 0 0" xyz="-0.0900 -0.0001 -0.0017" />
+            <mass value="1.5175" />
+        </intertial>
         <visual>
             <geometry>
                 <mesh filename="./meshes/gripper_base.stl"/>
@@ -91,6 +95,11 @@
     </joint>
 
     <link name="finger_left">
+        <intertial>
+            <origin rpy="0 0 0" xyz="-0.01 0 0" />
+            <mass value="0.0798" />
+        </intertial>
+
         <visual>
             <geometry>
                 <mesh filename="./meshes/gripper_finger.stl"/>
@@ -104,6 +113,11 @@
     </link>
 
     <link name="finger_right">
+        <intertial>
+            <origin rpy="0 0 0" xyz="-0.01 0 0" />
+            <mass value="0.0798" />
+        </intertial>
+
         <visual>
             <geometry>
                 <mesh filename="./meshes/gripper_finger.stl"/>
