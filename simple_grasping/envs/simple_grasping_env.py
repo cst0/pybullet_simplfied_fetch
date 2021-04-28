@@ -4,7 +4,7 @@ import numpy as np
 import pybullet as p
 from simple_grasping.resources.simplefetch import SimpleFetch
 
-class SimpleDrivingEnv(gym.Env):
+class SimpleGraspingEnv(gym.Env):
     def __init__(self):
         self.action_space = Box(
             low=np.array([-.1, -.1, -.1]),
@@ -30,10 +30,6 @@ class SimpleDrivingEnv(gym.Env):
 
     def reset(self):
         p.resetSimulation(self.client)
-        pass
-
-    def render(self):
-        pass
 
     def close(self):
         p.disconnect(self.client)
