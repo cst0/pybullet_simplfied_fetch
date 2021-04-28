@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="cartesian_envrionment">
+<!-- some urdf stuff commented out now that we're an xacro -->
+<!--robot name="cartesian_envrionment"-->
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <mesh filename="./table.stl"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="./table.stl"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="start_pose_offset_fixed_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="start_pose_offset_link" />
+        <origin xyz="0 0 0" />
+    </joint>
+
+    <link name="start_pose_offset_link">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </link>
+
+    <joint name="table_to_gripper_x" type="prismatic">
+        <parent link="base_link" />
+        <child link="x_to_y" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1" />
+    </joint>
+
+    <link name="x_to_y">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </link>
+
+    <joint name="table_to_gripper_y" type="prismatic">
+        <parent link="x_to_y" />
+        <child link="y_to_z" />
+        <origin xyz="0 0 0" rpy="0 0 ${pi/2}" />
+        <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1" />
+    </joint>
+
+    <link name="y_to_z">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </link>
+
+    <joint name="table_to_gripper_z" type="prismatic">
+        <parent link="y_to_z" />
+        <child link="prismatic_output" />
+        <origin xyz="0 0 0" rpy="0 -${pi/2} 0 " />
+        <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1" />
+    </joint>
+
+    <link name="prismatic_output">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </link>
+
+
+    <joint name="prismatic_to_gripper" type="fixed">
+        <parent link="prismatic_output" />
+        <child link="gripper_base" />
+        <origin xyz="0 0 0.560" rpy="0 ${pi/2} 0" />
+    </joint>
+
+    <link name="gripper_base">
+        <visual>
+            <geometry>
+                <mesh filename="./gripper_base.stl"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="./gripper_base.stl"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="gripper_to_finger1" type="fixed">
+        <parent link="gripper_base" />
+        <child link="finger1" />
+        <origin xyz="0.048 0 -0.125" rpy="0 0 0" />
+    </joint>
+
+    <joint name="gripper_to_finger2" type="fixed">
+        <parent link="gripper_base" />
+        <child link="finger2" />
+        <origin xyz="-0.048 0 -0.125" rpy="0 0 0" />
+    </joint>
+
+    <link name="finger1">
+        <visual>
+            <geometry>
+                <mesh filename="./gripper_finger.stl"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="./gripper_finger.stl"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="finger2">
+        <visual>
+            <geometry>
+                <mesh filename="./gripper_finger.stl"/>
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="./gripper_finger.stl"/>
+            </geometry>
+        </collision>
+    </link>
+</robot>
