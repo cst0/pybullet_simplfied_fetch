@@ -8,16 +8,14 @@ class SimpleFetchEnv(gym.Env):
     def __init__(self):
         self.action_space = Box(
             low=np.array([
-                -.1, # gripper x velocity
-                -.1, # gripper y velocity
+                -.1, # gripper x relative position change
+                -.1, # gripper y relative position change
                 -.1, # gripper z velocity
-                -.0  # gripper theta velocity
                 ]),
             high=np.array([
-                .1, # gripper x velocity
-                .1, # gripper y velocity
+                .1, # gripper x relative position change
+                .1, # gripper y relative position change
                 .1, # gripper z velocity
-                .0  # gripper theta velocity
                 ]),
         )
 
@@ -27,14 +25,12 @@ class SimpleFetchEnv(gym.Env):
                 -.5, -.5, -.5,  # cube 1 x, y, z
                 -.5, -.5, -.5,  # cube 2 x, y, z
                 -.5, -.5, -.5,  # cube 3 x, y, z
-                -3.14             # gripper angle
                 ]),
             high=np.array([
                 .5, .5, .5,     # gripper x, y, z
                 .5, .5, .5,     # cube 1 x, y, z
                 .5, .5, .5,     # cube 2 x, y, z
                 .5, .5, .5,     # cube 3 x, y, z
-                3.14            # gripper angle
                 ]),
         )
 
@@ -46,7 +42,7 @@ class SimpleFetchEnv(gym.Env):
                 0            # gripper angle
                 ])
 
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         self.simplefetch = SimpleFetch(self.client)
 
         self.goal = None
