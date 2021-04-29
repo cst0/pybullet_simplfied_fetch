@@ -9,20 +9,24 @@
   <link name="base_link">
     <intertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0"/>
+      <mass value="0.001"/>
     </intertial>
     <visual>
       <geometry>
-        <mesh filename="./meshes/table.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/table.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="./meshes/table.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/table.stl"/>
       </geometry>
     </collision>
   </link>
   <joint name="start_pose_offset_fixed_joint" type="fixed">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="base_link"/>
     <child link="start_pose_offset_link"/>
     <origin xyz="0 0 0"/>
@@ -30,11 +34,15 @@
   <link name="start_pose_offset_link">
     <intertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0"/>
+      <mass value="0.001"/>
     </intertial>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </link>
   <joint name="table_to_gripper_x" type="prismatic">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="base_link"/>
     <child link="x_to_y"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -48,6 +56,10 @@
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </link>
   <joint name="table_to_gripper_y" type="prismatic">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="x_to_y"/>
     <child link="y_to_z"/>
     <origin rpy="0 0 1.57079632679" xyz="0 0 0"/>
@@ -56,11 +68,15 @@
   <link name="y_to_z">
     <intertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0"/>
+      <mass value="0.001"/>
     </intertial>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </link>
   <joint name="table_to_gripper_z" type="prismatic">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="y_to_z"/>
     <child link="prismatic_output"/>
     <origin rpy="0 -1.57079632679 0 " xyz="0 0 0"/>
@@ -69,11 +85,15 @@
   <link name="prismatic_output">
     <intertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0"/>
+      <mass value="0.001"/>
     </intertial>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </link>
   <joint name="prismatic_to_gripper" type="fixed">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="prismatic_output"/>
     <child link="gripper_base"/>
     <origin rpy="0 1.57079632679 0" xyz="0 0 0.560"/>
@@ -85,21 +105,29 @@
     </intertial>
     <visual>
       <geometry>
-        <mesh filename="./meshes/gripper_base.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/gripper_base.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="./meshes/gripper_base.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/gripper_base.stl"/>
       </geometry>
     </collision>
   </link>
   <joint name="gripper_to_finger_left" type="fixed">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="gripper_base"/>
     <child link="finger_left"/>
     <origin rpy="0 0 0" xyz="0.048 0 -0.125"/>
   </joint>
   <joint name="gripper_to_finger_right" type="fixed">
+    <intertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.001"/>
+    </intertial>
     <parent link="gripper_base"/>
     <child link="finger_right"/>
     <origin rpy="0 0 0" xyz="-0.048 0 -0.125"/>
@@ -111,12 +139,12 @@
     </intertial>
     <visual>
       <geometry>
-        <mesh filename="./meshes/gripper_finger.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/gripper_finger.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="./meshes/gripper_finger.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/gripper_finger.stl"/>
       </geometry>
     </collision>
   </link>
@@ -127,12 +155,12 @@
     </intertial>
     <visual>
       <geometry>
-        <mesh filename="./meshes/gripper_finger.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/gripper_finger.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="./meshes/gripper_finger.stl"/>
+        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/gripper_finger.stl"/>
       </geometry>
     </collision>
   </link>
