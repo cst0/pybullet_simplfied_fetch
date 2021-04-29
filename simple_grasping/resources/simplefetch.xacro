@@ -3,6 +3,11 @@
 <!-- some urdf stuff commented out now that we're an xacro -->
 <!--robot name="cartesian_envrionment"-->
     <link name="base_link">
+        <intertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+        </intertial>
+
         <visual>
             <geometry>
                 <mesh filename="./meshes/table.stl"/>
@@ -22,6 +27,11 @@
     </joint>
 
     <link name="start_pose_offset_link">
+        <intertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+        </intertial>
+
         <origin xyz="0 0 0" rpy="0 0 0" />
     </link>
 
@@ -33,6 +43,11 @@
     </joint>
 
     <link name="x_to_y">
+        <intertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+        </intertial>
+
         <origin xyz="0 0 0" rpy="0 0 0"/>
     </link>
 
@@ -44,6 +59,11 @@
     </joint>
 
     <link name="y_to_z">
+        <intertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+        </intertial>
+
         <origin xyz="0 0 0" rpy="0 0 0"/>
     </link>
 
@@ -55,6 +75,11 @@
     </joint>
 
     <link name="prismatic_output">
+        <intertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+        </intertial>
+
         <origin xyz="0 0 0" rpy="0 0 0"/>
     </link>
 
