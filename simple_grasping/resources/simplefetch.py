@@ -9,6 +9,7 @@ class SimpleFetch:
         p.setAdditionalSearchPath("./resources/")
         p.setAdditionalSearchPath("./resources/meshes")
         f_name = os.path.join(os.path.dirname(__file__), 'simplefetch.urdf')
+        print("Going to load URDF file "+str(f_name))
         self.simplefetch = p.loadURDF(fileName=f_name,
                 basePosition=[0,0,0.3625],
                 physicsClientId=client)
@@ -33,15 +34,17 @@ class SimpleFetch:
             p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=x_speed);
             p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=y_speed);
             p.setJointMotorControl2(self.simplefetch, self.z_axis_joint, p.VELOCITY_CONTROL, targetVelocity=z_speed);
-        except Exception:
+        except Exception as e:
             print("caught exception when setting joint motor control")
+            raise e
 
     def get_observation(self) -> Observation:
         position = [0, 0, 0]
         angle = [0, 0, 0]
         try:
             position, angle = p.getBasePositionAndOrientation(self.simplefetch)
-        except Exception:
+        except Exception as e:
             print("getting position and orientation failed")
+            raise e
 
         return Observation(Pose(position[0], position[1], position[2], angle[0]), [Pose(0,0,0,0)])
