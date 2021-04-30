@@ -1,3 +1,4 @@
+from gym.core import ObservationWrapper
 from simple_grasping.standard_interfaces import Action, Observation, Pose
 import pybullet as p
 import os
@@ -8,12 +9,12 @@ class SimpleFetch:
         #p.loadURDF("plane.urdf")
         p.setAdditionalSearchPath("./resources/")
         p.setAdditionalSearchPath("./resources/meshes")
-        f_name = os.path.join(os.path.dirname(__file__), 'simplefetch.urdf')
-        print("Going to load URDF file "+str(f_name))
-        self.simplefetch = p.loadURDF(fileName=f_name,
+        filename = os.path.join(os.path.dirname(__file__), 'simplefetch.urdf')
+        print("Going to load URDF file "+str(filename))
+        self.simplefetch = p.loadURDF(fileName=filename,
                 basePosition=[0,0,0.3625],
                 physicsClientId=client)
-        p.stepSimulation()
+        #p.stepSimulation()
 
         self.x_axis_joint = 1
         self.y_axis_joint = 2
@@ -25,18 +26,19 @@ class SimpleFetch:
     def get_ids(self):
         return self.simplefetch, self.client
 
-    def apply_action(self, action: Action):
-        x_speed = action.x_vel
-        y_speed = action.y_vel
-        z_speed = action.z_vel
+    def apply_action(self, action):
+        pass
+        #x_speed = action.x_vel
+        #y_speed = action.y_vel
+        #z_speed = action.z_vel
 
-        try:
-            p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=x_speed);
-            p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=y_speed);
-            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint, p.VELOCITY_CONTROL, targetVelocity=z_speed);
-        except Exception as e:
-            print("caught exception when setting joint motor control")
-            raise e
+        #try:
+        #    p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=x_speed);
+        #    p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=y_speed);
+        #    p.setJointMotorControl2(self.simplefetch, self.z_axis_joint, p.VELOCITY_CONTROL, targetVelocity=z_speed);
+        #except Exception as e:
+        #    print("caught exception when setting joint motor control")
+        #    raise e
 
     def get_observation(self) -> Observation:
         position = [0, 0, 0]
