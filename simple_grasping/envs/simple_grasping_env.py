@@ -11,12 +11,12 @@ class SimpleFetchEnv(gym.Env):
                 -.1, # gripper x relative position change
                 -.1, # gripper y relative position change
                 -.1, # gripper z velocity
-                ]),
+                ], dtype=np.float32),
             high=np.array([
                 .1, # gripper x relative position change
                 .1, # gripper y relative position change
                 .1, # gripper z velocity
-                ]),
+                ], dtype=np.float32),
         )
 
         self.observation_space = Box(
@@ -25,13 +25,13 @@ class SimpleFetchEnv(gym.Env):
                 -.5, -.5, -.5,  # cube 1 x, y, z
                 -.5, -.5, -.5,  # cube 2 x, y, z
                 -.5, -.5, -.5,  # cube 3 x, y, z
-                ]),
+                ], dtype=np.float32),
             high=np.array([
                 .5, .5, .5,     # gripper x, y, z
                 .5, .5, .5,     # cube 1 x, y, z
                 .5, .5, .5,     # cube 2 x, y, z
                 .5, .5, .5,     # cube 3 x, y, z
-                ]),
+                ], dtype=np.float32),
         )
 
         self.observation = np.array([
@@ -40,10 +40,9 @@ class SimpleFetchEnv(gym.Env):
                 .0, .0, .0,  # cube 2 x, y, z
                 .0, .0, .0,  # cube 3 x, y, z
                 0            # gripper angle
-                ])
+                ], dtype=np.float32)
 
         self.client = p.connect(p.GUI)
-        self.simplefetch = SimpleFetch(self.client)
 
         self.goal = None
         self.finish = False
@@ -60,10 +59,16 @@ class SimpleFetchEnv(gym.Env):
         self.simplefetch.apply_action(action)
         p.stepSimulation()
         self.observe()
-        return self.observation_space, None, self.finish, None
+        return self.observation_space, self.compute_reward(), self.finish, None
+
+    def compute_reward(self):
+        return 0
 
     def reset(self):
         p.resetSimulation(self.client)
+        p.setGravity(0, 0, -9.8)
+        self.simplefetch = SimpleFetch(self.client)
+
         self.observe()
         return self.observation_space
 

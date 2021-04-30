@@ -6,7 +6,6 @@ class RandomAgent:
         pass
 
     def choose_action(self, observation:standard_interfaces.Observation) -> standard_interfaces.Action:
-        print(observation)
         a = standard_interfaces.Action(
                 _x_vel=np.random.random(),
                 _y_vel=np.random.random(),

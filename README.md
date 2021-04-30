@@ -11,10 +11,10 @@ Creates a simplified Fetch (just a table, gripper, and some blocks) and then wra
    cd ./simple_grasping/resources/
    xacro simplefetch.xacro > simplefetch.urdf
    ```
-   Note that changing the directory here does matter, since this is checking the
+   Note that changing to the directory here does matter, since this is checking the
    current working directory.  If that doesn't work for you, you could just edit
    the URDF directly and replace `/home/cst/code/pybullet_simplified_fetch/` with
-   your path.
+   your path (there's 8 of them total, I think).
 
 2. Create an agent: A sample RandomAgent is provided (`./randomagent.py`) to
    demonstrate this, and further documentation (below) should help outline
