@@ -1,3 +1,4 @@
+from simple_grasping.standard_interfaces import Action
 import gym
 from gym.spaces import Box
 import numpy as np
@@ -42,7 +43,7 @@ class SimpleFetchEnv(gym.Env):
                 0            # gripper angle
                 ], dtype=np.float32)
 
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
 
         self.goal = None
         self.finish = False
@@ -55,10 +56,11 @@ class SimpleFetchEnv(gym.Env):
         self.observation[1] = gripper_observation.gripper.y
         self.observation[2] = gripper_observation.gripper.z
 
-    def step(self, action):
+    def step(self, action: Action):
         self.simplefetch.apply_action(action)
         p.stepSimulation()
         self.observe()
+        print(self.observation_space)
         return self.observation_space, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
