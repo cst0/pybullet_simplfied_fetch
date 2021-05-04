@@ -17,46 +17,76 @@
         <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/table.stl"/>
       </geometry>
     </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" iyy="0" izz="0"/>
+    </inertial>
   </link>
   <joint name="start_pose_offset_fixed_joint" type="fixed">
     <parent link="base_link"/>
     <child link="start_pose_offset_link"/>
     <origin xyz="0 0 0"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <link name="start_pose_offset_link">
     <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" iyy="0" izz="0"/>
+    </inertial>
   </link>
   <joint name="table_to_gripper_x" type="prismatic">
     <parent link="base_link"/>
     <child link="x_to_y"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <link name="x_to_y">
     <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" iyy="0" izz="0"/>
+    </inertial>
   </link>
   <joint name="table_to_gripper_y" type="prismatic">
     <parent link="x_to_y"/>
     <child link="y_to_z"/>
     <origin rpy="0 0 1.57079632679" xyz="0 0 0"/>
     <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <link name="y_to_z">
     <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" iyy="0" izz="0"/>
+    </inertial>
   </link>
   <joint name="table_to_gripper_z" type="prismatic">
     <parent link="y_to_z"/>
     <child link="prismatic_output"/>
     <origin rpy="0 -1.57079632679 0 " xyz="0 0 0"/>
     <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <link name="prismatic_output">
     <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" iyy="0" izz="0"/>
+    </inertial>
   </link>
   <joint name="prismatic_to_gripper" type="fixed">
     <parent link="prismatic_output"/>
     <child link="gripper_base"/>
     <origin rpy="0 1.57079632679 0" xyz="0.560 -0.25 -0.25"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <link name="gripper_base">
     <inertial>
@@ -80,12 +110,14 @@
     <parent link="gripper_base"/>
     <child link="finger_left"/>
     <origin rpy="0 0 1.57079632679" xyz="0.048 0 -0.125"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <joint name="gripper_to_finger_right" type="prismatic">
     <limit effort="1000" lower="0.048" upper="0.0" velocity="0.1"/>
     <parent link="gripper_base"/>
     <child link="finger_right"/>
     <origin rpy="0 0 1.57079632679" xyz="-0.048 0 -0.125"/>
+    <axis xyz="1 0 0"/>
   </joint>
   <link name="finger_left">
     <inertial>
