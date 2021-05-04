@@ -13,8 +13,8 @@ class Observation:
         self.block_positions = _block_positions
 
 class Action:
-    def __init__(self, _x_vel:float, _y_vel:float, _z_vel:float, _theta_vel:float):
-        self.x_vel = _x_vel
-        self.y_vel = _y_vel
-        self.z_vel = _z_vel
-        self.theta_vel = _theta_vel
+    def __init__(self, _x_dist:float, _y_dist:float, _z_dist:float, _theta_dist:float):
+        self.x_dist = _x_dist
+        self.y_dist = _y_dist
+        self.z_dist = _z_dist
+        self.theta_vel = _theta_dist
