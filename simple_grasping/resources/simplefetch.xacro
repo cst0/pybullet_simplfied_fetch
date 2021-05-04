@@ -87,7 +87,6 @@
         </inertial>
     </link>
 
-
     <joint name="prismatic_to_gripper" type="fixed">
         <parent link="prismatic_output" />
         <child link="gripper_base" />
