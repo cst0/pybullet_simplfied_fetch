@@ -2,6 +2,20 @@ from typing import List
 from enum import Enum
 
 
+class Block(Enum):
+    SMALL = 1
+    MEDIUM = 2
+    LARGE = 3
+
+
+class Shape:
+    def __init__(self, _length:float, _width:float, _height:float, _mesh:str=None):
+        self.length = _length
+        self.width = _width
+        self.height = _height
+        self.mesh = _mesh
+
+
 block_size_data = {
         Block.SMALL  : Shape(50, 50, 50, _mesh="small_block.urdf"),
         Block.MEDIUM : Shape(70, 70, 70, _mesh="medium_block.urdf"),
@@ -17,14 +31,6 @@ class Pose:
         self.theta = _theta
 
 
-class Shape:
-    def __init__(self, _length:float, _width:float, _height:float, _mesh:str=None):
-        self.length = _length
-        self.width = _width
-        self.height = _height
-        self.mesh = _mesh
-
-
 class Observation:
     def __init__(self, _gripper:Pose, _block_positions:List[Pose]):
         self.gripper = _gripper
@@ -38,7 +44,3 @@ class Action:
         self.theta_vel = _theta_dist
 
 
-class Block(Enum):
-    SMALL = 1
-    MEDIUM = 2
-    LARGE = 3
