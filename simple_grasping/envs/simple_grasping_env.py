@@ -1,12 +1,21 @@
-from simple_grasping.standard_interfaces import Action
 import gym
-from gym.spaces import Box
 import numpy as np
+import os
 import pybullet as p
+from gym.spaces import Box
 from simple_grasping.resources.simplefetch import SimpleFetch
+from simple_grasping.standard_interfaces import Action, Pose, Block, block_size_data
+from typing import List
 
 class SimpleFetchEnv(gym.Env):
     def __init__(self):
+        self.table_height = 0.3625
+        self.table_x_min = -0.5
+        self.table_x_max = 0.5
+        self.table_y_min = -0.5
+        self.table_y_max = 0.5
+        self.padding_space = 0.01
+
         self.action_space = Box(
             low=np.array([
                 -.1, # gripper x relative position change
@@ -43,7 +52,7 @@ class SimpleFetchEnv(gym.Env):
                 0            # gripper angle
                 ], dtype=np.float32)
 
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
 
         self.goal = None
         self.finish = False
@@ -65,6 +74,51 @@ class SimpleFetchEnv(gym.Env):
 
     def compute_reward(self):
         return 0
+
+    def place_objects(self, blocks:List[Block], block_positions:List[Pose]=None):
+        """
+        place objects in the environment. Specify blocks to be placed, and
+        optionally specify the locations to place them in (z will be ignored,
+        theta defaulting to normal). If no locations are provided, location will be random.
+        """
+        # handle case where nothing is specified
+        if len(blocks) == 0:
+            print("Blocklist empty, returning immediately")
+            return
+
+        # handle cases where there's a length/position mismatch
+        if block_positions is None or len(block_positions) < len(blocks):
+            if block_positions is None:
+                block_positions = []
+            else:
+                print("You've specified more blocks than block positions. Some random positions will be selected for you.")
+            for _ in blocks:
+                block_positions.append(self.generate_valid_table_position())
+        if len(block_positions) > len(blocks):
+            print("You've specified more block positions than blocks. Some positions will be ignored.")
+
+        # we have some z values to fix based off of the block sizes, and we'll
+        # assume all theta's should be 0 and then we actually get to work
+        # placing that stuff
+        for n in range(0, len(blocks)):
+            block_positions[n].z = self.table_height + (block_size_data[blocks[n]].height / 2) + self.padding_space
+            block_positions[n].theta = 0
+            p.setAdditionalSearchPath("./resources/")
+            p.setAdditionalSearchPath("./resources/meshes")
+            meshname = block_size_data[blocks[n]].mesh
+            meshname = meshname if meshname is not None else ""
+            filename = os.path.join(os.path.dirname(__file__), meshname)
+            print("Going to load URDF file "+str(filename))
+            self.simplefetch = p.loadURDF(fileName=filename,
+                    basePosition=[block_positions[n].x, block_positions[n].y, block_positions[n].z],
+                    physicsClientId=self.client)
+
+    def generate_valid_table_position(self):
+        return Pose(
+                np.random.uniform(self.table_x_min, self.table_x_max),
+                np.random.uniform(self.table_y_min, self.table_y_max),
+                0,
+                0)
 
     def reset(self):
         p.resetSimulation(self.client)
