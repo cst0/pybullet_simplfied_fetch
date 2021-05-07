@@ -1,9 +1,11 @@
 import gym
 from randomagent import RandomAgent
+from simple_grasping.standard_interfaces import Block
 
 def main():
     agent = RandomAgent()
     env = gym.make('SimpleFetch-v0')
+    env.place_objects([Block.SMALL, Block.MEDIUM, Block.LARGE])
     observation = env.reset()
     finish = False
     while not finish:

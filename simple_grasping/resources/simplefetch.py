@@ -1,5 +1,5 @@
 from gym.core import ObservationWrapper
-from simple_grasping.standard_interfaces import Action, Observation, Pose
+from simple_grasping.standard_interfaces import Action, AgentState, Observation, Pose
 import pybullet as p
 import os
 
@@ -53,9 +53,9 @@ class SimpleFetch:
             keep_moving = True
             while keep_moving:
                 # TODO-- refactor to remove duplicate code
-                position, _ = p.getBasePositionAndOrientation(self.simplefetch)
-                x_now = position[0]
-                y_now = position[1]
+                pose = AgentState(self.simplefetch)
+                x_now = pose.pose.x
+                y_now = pose.pose.y
                 x_finished = False
                 y_finished = False
                 # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
