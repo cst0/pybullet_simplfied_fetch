@@ -103,11 +103,14 @@ class SimpleFetchEnv(gym.Env):
         for n in range(0, len(blocks)):
             block_positions[n].z = self.table_height + (block_size_data[blocks[n]].height / 2) + self.padding_space
             block_positions[n].theta = 0
-            p.setAdditionalSearchPath("./resources/")
-            p.setAdditionalSearchPath("./resources/meshes")
+            p.setAdditionalSearchPath("../resources/")
             meshname = block_size_data[blocks[n]].mesh
             meshname = meshname if meshname is not None else ""
-            filename = os.path.join(os.path.dirname(__file__), meshname)
+            path_as_list = __file__.split(os.sep)
+            stripped = path_as_list[:-2 if path_as_list[-1] is not '' else -3]
+            print(stripped)
+            joinedpath = os.sep.join(stripped)
+            filename = os.path.join(joinedpath, 'resources', meshname)
             print("Going to load URDF file "+str(filename))
             self.simplefetch = p.loadURDF(fileName=filename,
                     basePosition=[block_positions[n].x, block_positions[n].y, block_positions[n].z],

@@ -78,22 +78,14 @@ class AgentState:
     def get_xyz_from_index(self, index):
         return p.getLinkStates(self.urdf, [index])[0][0] # this garbage of an api is why we have a wrapper
 
-# joint-based search of positions by data type
-#        if type(joint) is bytes:
-#            joint = bytes.decode(joint)
-#        if type(joint) is str:
-#            for n in range(0, p.getNumJoints(urdf)):
-#                if bytes.decode(p.getJointInfo(urdf, n)[1]) == joint:
-#                    joint = n
-#            if type(joint) is str:
-#                # couldn't find that joint :/
-#                return
-#
-#        if type(joint) is int:
-#            thisjoint = p.getJointInfo(urdf, joint)
-#            self.pose = Pose(
-#                _x = thisjoint[13][0],
-#                _y = thisjoint[13][1],
-#                _z = thisjoint[13][2],
-#                _theta = 0
-#            )
+    def get_index_by_name(self, joint):
+        # joint-based search of positions by data type
+        if type(joint) is bytes:
+            joint = bytes.decode(joint)
+        if type(joint) is str:
+            for n in range(0, p.getNumJoints(self.urdf)):
+                if bytes.decode(p.getJointInfo(self.urdf, n)[1]) == joint:
+                    joint = n
+            if type(joint) is str:
+                # couldn't find that joint :/
+                return None
