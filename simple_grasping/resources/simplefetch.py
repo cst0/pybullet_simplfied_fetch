@@ -53,7 +53,7 @@ class SimpleFetch:
             keep_moving = True
             while keep_moving:
                 # TODO-- refactor to remove duplicate code
-                position, _ = p.getBasePositionAndOrientation(self.simplefetch)
+                position, _ = p.getJointInfo(self.simplefetch)
                 x_now = position[0]
                 y_now = position[1]
                 x_finished = False

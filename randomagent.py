@@ -9,7 +9,6 @@ class RandomAgent:
         a = standard_interfaces.Action(
                 _x_dist=np.random.random(),
                 _y_dist=np.random.random(),
-                _z_dist=np.random.random(),
-                _theta_dist=np.random.random()
+                _z_interact=np.random.choice([True, False])
             )
         return a
