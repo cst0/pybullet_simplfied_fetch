@@ -72,7 +72,7 @@ class AgentState:
                 _y = self.get_xyz_from_index(joint)[1],
                 _z = self.get_xyz_from_index(joint)[2],
         ) # ee link
-        print(self.pose)
+        #print(self.pose)  # dbg
         self.finger_distance = self.get_xyz_from_index(5)[1] - self.get_xyz_from_index(6)[1]
 
     def get_xyz_from_index(self, index):

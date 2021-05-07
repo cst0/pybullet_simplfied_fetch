@@ -108,7 +108,6 @@ class SimpleFetchEnv(gym.Env):
             meshname = meshname if meshname is not None else ""
             path_as_list = __file__.split(os.sep)
             stripped = path_as_list[:-2 if path_as_list[-1] is not '' else -3]
-            print(stripped)
             joinedpath = os.sep.join(stripped)
             filename = os.path.join(joinedpath, 'resources', meshname)
             print("Going to load URDF file "+str(filename))

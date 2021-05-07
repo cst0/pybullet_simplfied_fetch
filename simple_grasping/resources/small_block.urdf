@@ -14,18 +14,30 @@
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <visual>
             <geometry>
-                <box size="0.04 0.04 0.04"
+                <box size="0.04 0.04 0.04"/>
             </geometry>
             <material name="white" />
         </visual>
         <collision>
             <geometry>
-                <box size="0.04 0.04 0.04"
+                <box size="0.04 0.04 0.04"/>
             </geometry>
         </collision>
-        <inertial>
-            <mass value="1"/>
-            <inertia ixx="0" ixy="0" iyy="0" izz="0"/>
-        </inertial>
     </link>
+
+    <!-- workaround for the fact that base links don't have mass/inertia -->
+    <joint name="fixed_inertial_joint" type="fixed">
+        <child link="inertial_link" />
+        <parent link="base_link" />
+    </joint>
+
+    <link name="inertial_link">
+        <inertial>
+          <origin rpy="0 0 0" xyz="0 0 0"/>
+          <mass value="1"/>
+          <inertia ixx="0" ixy="0" iyy="0" izz="0" ixz="0" iyz="0"/>
+        </inertial>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+    </link>
+
 </robot>
