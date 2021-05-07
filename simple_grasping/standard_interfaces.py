@@ -63,6 +63,13 @@ class Action:
         self.z_interact = _z_interact
         self.theta_vel = _theta_dist  # ignored atm
 
+    def __str__(self):
+        return  ""+\
+                "[x_relative:"+str(round(self.x_dist, 3))+\
+                ",y_relative:"+str(round(self.y_dist, 3))+\
+                ",z_interact:"+str(self.z_interact)+\
+                "]"
+
 
 class AgentState:
     def __init__(self, urdf, joint:int=4):
@@ -74,6 +81,9 @@ class AgentState:
         ) # ee link
         #print(self.pose)  # dbg
         self.finger_distance = self.get_xyz_from_index(5)[1] - self.get_xyz_from_index(6)[1]
+
+    def __str__(self):
+        return str(self.pose)
 
     def get_xyz_from_index(self, index):
         return p.getLinkStates(self.urdf, [index])[0][0] # this garbage of an api is why we have a wrapper

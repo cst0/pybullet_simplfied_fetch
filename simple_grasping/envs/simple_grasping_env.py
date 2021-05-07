@@ -16,6 +16,8 @@ class SimpleFetchEnv(gym.Env):
         self.table_y_max = 0.5
         self.padding_space = 0.01
 
+        self.blocks = []
+
         self.action_space = Box(
             low=np.array([
                 -.1, # gripper x relative position change
@@ -111,9 +113,9 @@ class SimpleFetchEnv(gym.Env):
             joinedpath = os.sep.join(stripped)
             filename = os.path.join(joinedpath, 'resources', meshname)
             print("Going to load URDF file "+str(filename))
-            self.simplefetch = p.loadURDF(fileName=filename,
+            self.blocks.append(p.loadURDF(fileName=filename,
                     basePosition=[block_positions[n].x, block_positions[n].y, block_positions[n].z],
-                    physicsClientId=self.client)
+                    physicsClientId=self.client))
 
     def generate_valid_table_position(self):
         return Pose(
