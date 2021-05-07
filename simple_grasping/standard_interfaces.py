@@ -41,6 +41,13 @@ class Pose:
         self.z = _z
         self.theta = _theta
 
+    def __str__(self):
+        return ""+\
+            "[x:"+str(round(self.x, 3))+\
+            ",y:"+str(round(self.y, 3))+\
+            ",z:"+str(round(self.z, 3))+\
+            "]"
+
 
 class Observation:
     def __init__(self, _gripper:Pose, _block_positions:List[Pose], _now_grasping:bool=False):
@@ -58,13 +65,18 @@ class Action:
 
 
 class AgentState:
-    def __init__(self, urdf, joint):
+    def __init__(self, urdf, joint:int=4):
+        self.urdf = urdf
         self.pose = Pose(
-                _x = p.getLinkStates(urdf, 4)[0],
-                _y = p.getLinkStates(urdf, 4)[1],
-                _z = p.getLinkStates(urdf, 4)[2],
+                _x = self.get_xyz_from_index(joint)[0],
+                _y = self.get_xyz_from_index(joint)[1],
+                _z = self.get_xyz_from_index(joint)[2],
         ) # ee link
-        self.finger_distance = p.getLinkStates(urdf, 5)[1] - p.getLinkStates(urdf, 6)[1]
+        print(self.pose)
+        self.finger_distance = self.get_xyz_from_index(5)[1] - self.get_xyz_from_index(6)[1]
+
+    def get_xyz_from_index(self, index):
+        return p.getLinkStates(self.urdf, [index])[0][0] # this garbage of an api is why we have a wrapper
 
 # joint-based search of positions by data type
 #        if type(joint) is bytes:
