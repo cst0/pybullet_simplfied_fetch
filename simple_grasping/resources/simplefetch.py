@@ -15,8 +15,10 @@ class SimpleFetch:
         self.simplefetch = p.loadURDF(fileName=filename,
                 basePosition=[0,0,0.3625],
                 physicsClientId=client)
-        sleep(1)
+#        sleep(1)
         p.stepSimulation()
+
+        self.grasped_block = None
 
 #        print("Loaded fetch with joints:")
 #        for n in range(0, p.getNumJoints(self.simplefetch)):

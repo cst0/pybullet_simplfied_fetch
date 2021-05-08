@@ -5,7 +5,7 @@ import pybullet as p
 from gym.spaces import Box
 from simple_grasping.resources.simplefetch import SimpleFetch
 from simple_grasping.standard_interfaces import Action, Pose, Block, block_size_data
-from typing import List
+from typing import List, Tuple
 
 class SimpleFetchEnv(gym.Env):
     def __init__(self):
@@ -17,6 +17,7 @@ class SimpleFetchEnv(gym.Env):
         self.padding_space = 0.01
 
         self.blocks = []
+        self.block_ids = []
 
         self.action_space = Box(
             low=np.array([
@@ -116,13 +117,48 @@ class SimpleFetchEnv(gym.Env):
             self.blocks.append(p.loadURDF(fileName=filename,
                     basePosition=[block_positions[n].x, block_positions[n].y, block_positions[n].z],
                     physicsClientId=self.client))
+            self.block_ids.append(blocks[n])
 
     def generate_valid_table_position(self):
         return Pose(
                 np.random.uniform(self.table_x_min, self.table_x_max),
                 np.random.uniform(self.table_y_min, self.table_y_max),
-                0,
-                0)
+                0, 0)
+
+    def get_block_position(self, block:Block) -> Pose:
+        return Pose(0,0,0)
+
+    def check_collision_height(self) -> Tuple[float, bool]:
+        """
+        if we place a block right now, at what height will it collide with
+        something? When we place it, are we placing it at an x/y position that
+        lends itself to the block staying there, or are we placing it
+        off-coverage (leading to an unstable placement)?
+        @returns (collision_height, True if fully covered else False)
+        """
+        if self.simplefetch.grasped_block is None:
+            return self.table_height, True
+
+        for block in self.block_ids:
+            if self.simplefetch.grasped_block == block:
+                # this is the block we're already holding, skip
+                pass
+            # at what distance between two blocks can we guarantee that a collision is not taking place?
+            clearance_distance = block_size_data[self.simplefetch.grasped_block].width + block_size_data[block].width
+            # at what distance between two blocks can we guarantee that a block is fully supported by the other?
+            coverage_distance = (block_size_data[self.simplefetch.grasped_block].width - block_size_data[block].width)/2
+            block_distance = self.get_block_position(block)
+
+            # we make use of the fact that blocks have no rotation here, so we
+            # can check x and y independently to check for not-fully-covered
+            # collision independently. Check first for a lack of clearance,
+            # then check for lack of full coverage.
+            if block_distance.x < clearance_distance or \
+               block_distance.y < clearance_distance:
+                   return (block_size_data[block].height, (coverage_distance < block_distance.x and coverage_distance < block_distance.y))
+
+        # no block collisions, we're only over the table.
+        return (self.table_height, True)
 
     def reset(self):
         p.resetSimulation(self.client)
