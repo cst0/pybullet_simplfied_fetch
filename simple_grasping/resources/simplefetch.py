@@ -24,7 +24,6 @@ class SimpleFetch:
 #            print(joint)
 #            print(str(joint[0]) + ": " + joint[2].decode())
 
-
         self.x_axis_joint = urdf_string_data["table_to_gripper_x"]
         self.y_axis_joint = urdf_string_data["table_to_gripper_y"]
         self.z_axis_joint = urdf_string_data["table_to_gripper_z"]
@@ -65,6 +64,7 @@ class SimpleFetch:
 
             keep_moving = True
             while keep_moving:
+                p.stepSimulation()
                 # TODO-- refactor to remove duplicate code
                 pose = AgentState(self.simplefetch)
                 x_now = pose.pose.x
@@ -94,12 +94,19 @@ class SimpleFetch:
 
     def to_position_by_pose(self, action:Action):
         agent_state = AgentState(self.simplefetch)
-        x_abs = agent_state.pose.x + action.x_dist
-        y_abs = agent_state.pose.y + action.y_dist
+        x_abs = agent_state.x + action.x_dist
+        y_abs = agent_state.y + action.y_dist
 
         try:
             p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.POSITION_CONTROL, targetPosition=x_abs)
             p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.POSITION_CONTROL, targetPosition=y_abs)
+            p.stepSimulation()
+            sleep(1/60)
+            #while \
+            #        abs(max(x_abs, agent_state.x) - min(x_abs, agent_state.x)) > self.POSITION_THRESHOLD and \
+            #        abs(max(y_abs, agent_state.y) - min(y_abs, agent_state.y)) > self.POSITION_THRESHOLD:
+            #            agent_state = AgentState(self.simplefetch)
+
         except Exception as e:
             print("caught exception when setting joint motor control")
             raise e

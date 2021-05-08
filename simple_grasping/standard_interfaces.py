@@ -1,6 +1,17 @@
+from os import XATTR_CREATE
 import pybullet as p
 from typing import List
 from enum import Enum
+
+
+# constants as indexes
+X           = 0
+Y           = 1
+Z           = 2
+NAME        = 1
+POSITION    = 14
+ORIENTATION = 15
+
 
 class Block(Enum):
     SMALL = 1
@@ -74,6 +85,12 @@ class Action:
 class AgentState:
     def __init__(self, urdf, joint:int=4):
         self.urdf = urdf
+
+        jointinfo = p.getJointInfo(self.urdf, urdf_string_data["table_to_gripper_x"])[POSITION]
+        self.x = jointinfo[X]
+        self.y = jointinfo[Y]
+        self.z = jointinfo[Z]
+
         self.pose = Pose(
                 _x = self.get_xyz_from_index(joint)[0],
                 _y = self.get_xyz_from_index(joint)[1],
@@ -83,7 +100,10 @@ class AgentState:
         self.finger_distance = self.get_xyz_from_index(5)[1] - self.get_xyz_from_index(6)[1]
 
     def __str__(self):
-        return str(self.pose)
+        return  " " + str(self.x) +\
+                " " + str(self.y) +\
+                " " + str(self.z) +\
+                " " + str(self.pose)
 
     def get_xyz_from_index(self, index):
         return p.getLinkStates(self.urdf, [index])[0][0] # this garbage of an api is why we have a wrapper
