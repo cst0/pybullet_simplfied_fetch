@@ -1,7 +1,8 @@
 from gym.core import ObservationWrapper
-from simple_grasping.standard_interfaces import Action, AgentState, Observation, Pose
+from simple_grasping.standard_interfaces import Action, AgentState, Observation, Pose, urdf_string_data
 import pybullet as p
 import os
+from time import sleep
 
 class SimpleFetch:
     def __init__(self, client):
@@ -14,19 +15,25 @@ class SimpleFetch:
         self.simplefetch = p.loadURDF(fileName=filename,
                 basePosition=[0,0,0.3625],
                 physicsClientId=client)
-        #p.stepSimulation()
+        sleep(1)
+        p.stepSimulation()
 
-        self.x_axis_joint = 1
-        self.y_axis_joint = 2
-        self.z_axis_joint = 3
-        self.MAXSPEED = 0.1
+#        print("Loaded fetch with joints:")
+#        for n in range(0, p.getNumJoints(self.simplefetch)):
+#            joint = p.getJointState(self.simplefetch, n)
+#            print(joint)
+#            print(str(joint[0]) + ": " + joint[2].decode())
+
+        self.x_axis_joint = urdf_string_data["table_to_gripper_x"]
+        self.y_axis_joint = urdf_string_data["table_to_gripper_y"]
+        self.z_axis_joint = urdf_string_data["table_to_gripper_z"]
+        self.MAXSPEED = 0.5
         self.POSITION_THRESHOLD = 0.025
 
     def get_ids(self):
         return self.simplefetch, self.client
 
-    def apply_action(self, action: Action):
-        print("Provided new goal to obtain.")
+    def produce_xyvel(self, action:Action):
         x_dist = action.x_dist
         y_dist = action.y_dist
 
@@ -46,12 +53,18 @@ class SimpleFetch:
         x_vel *= 1 if x_dist >= 0 else -1
         y_vel *= 1 if y_dist >= 0 else -1
 
+        return x_goal, x_vel, y_goal, y_vel
+
+    def to_position_by_velocity(self, action:Action):
+        x_goal, x_vel, y_goal, y_vel = self.produce_xyvel(action)
         try:
+            print("setting velocity to "+str(x_vel)+", "+str(y_vel)+" on "+str(self.simplefetch))
             p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=x_vel)
             p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=y_vel)
 
             keep_moving = True
             while keep_moving:
+                p.stepSimulation()
                 # TODO-- refactor to remove duplicate code
                 pose = AgentState(self.simplefetch)
                 x_now = pose.pose.x
@@ -60,20 +73,47 @@ class SimpleFetch:
                 y_finished = False
                 # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
                 if abs(max(x_now, x_goal) - min(x_now, x_goal)) < self.POSITION_THRESHOLD:
+                    print("completed x")
                     x_finished = True
                     p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=0)
-                    #p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
+                    if not y_finished:
+                        p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
 
                 if abs(max(y_now, y_goal) - min(y_now, y_goal)) < self.POSITION_THRESHOLD:
+                    print("completed y")
                     y_finished = True
                     p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=0)
-                    #p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
+                    if not x_finished:
+                        p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
 
                 keep_moving = not ( x_finished and y_finished )
 
         except Exception as e:
             print("caught exception when setting joint motor control")
             raise e
+
+    def to_position_by_pose(self, action:Action):
+        agent_state = AgentState(self.simplefetch)
+        x_abs = agent_state.x + action.x_dist
+        y_abs = agent_state.y + action.y_dist
+
+        try:
+            p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.POSITION_CONTROL, targetPosition=x_abs)
+            p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.POSITION_CONTROL, targetPosition=y_abs)
+            p.stepSimulation()
+            sleep(1/60)
+            #while \
+            #        abs(max(x_abs, agent_state.x) - min(x_abs, agent_state.x)) > self.POSITION_THRESHOLD and \
+            #        abs(max(y_abs, agent_state.y) - min(y_abs, agent_state.y)) > self.POSITION_THRESHOLD:
+            #            agent_state = AgentState(self.simplefetch)
+
+        except Exception as e:
+            print("caught exception when setting joint motor control")
+            raise e
+
+    def apply_action(self, action: Action):
+        print("Provided new goal to obtain: "+str(action))
+        return self.to_position_by_pose(action)
 
     def get_observation(self) -> Observation:
         position = [0, 0, 0]
