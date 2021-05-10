@@ -14,15 +14,20 @@
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <visual>
             <geometry>
-                <box size="0.08 0.08 0.08"/>
+                <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/80mm.stl"/>
             </geometry>
             <material name="white" />
         </visual>
         <collision>
             <geometry>
-                <box size="0.08 0.08 0.08"/>
+                <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/80mm.stl"/>
             </geometry>
         </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0"/>
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
     </link>
 
     <!-- workaround for the fact that base links don't have mass/inertia -->

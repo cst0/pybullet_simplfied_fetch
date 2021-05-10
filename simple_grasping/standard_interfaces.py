@@ -14,6 +14,7 @@ ORIENTATION = 15
 
 
 class Block(Enum):
+    NONE = 0
     SMALL = 1
     MEDIUM = 2
     LARGE = 3
@@ -28,6 +29,7 @@ class Shape:
 
 
 block_size_data = {
+        Block.NONE   : Shape(0,  0,  0),
         Block.SMALL  : Shape(50, 50, 50, _mesh="small_block.urdf"),
         Block.MEDIUM : Shape(70, 70, 70, _mesh="medium_block.urdf"),
         Block.LARGE  : Shape(90, 90, 90, _mesh="large_block.urdf"),

@@ -1,8 +1,9 @@
-from gym.core import ObservationWrapper
-from simple_grasping.standard_interfaces import Action, AgentState, Observation, Pose, urdf_string_data
+#from gym.core import ObservationWrapper
+from simple_grasping.standard_interfaces import Action, AgentState, Block, Observation, Pose, urdf_string_data, block_size_data
 import pybullet as p
 import os
 from time import sleep
+from typing import List, Tuple
 
 class SimpleFetch:
     def __init__(self, client):
@@ -18,7 +19,9 @@ class SimpleFetch:
 #        sleep(1)
         p.stepSimulation()
 
-        self.grasped_block = None
+        self.grasped_block:Block = Block.NONE
+        self.blocks:List[Block] = []
+        self.block_ids:List[int] = []
 
 #        print("Loaded fetch with joints:")
 #        for n in range(0, p.getNumJoints(self.simplefetch)):
@@ -29,8 +32,15 @@ class SimpleFetch:
         self.x_axis_joint = urdf_string_data["table_to_gripper_x"]
         self.y_axis_joint = urdf_string_data["table_to_gripper_y"]
         self.z_axis_joint = urdf_string_data["table_to_gripper_z"]
+        self.gripper_left_joint = urdf_string_data["gripper_to_finger_left"]
+        self.gripper_right_joint = urdf_string_data["gripper_to_finger_right"]
         self.MAXSPEED = 0.5
         self.POSITION_THRESHOLD = 0.025
+        self.GRIPPER_OFFSET = 0.2
+        self.MOVEMENT_PLANE = 1
+        self.OPEN = 0.35
+        self.CLOSE = 0.0
+        self.TABLE_HEIGHT = .365
 
     def get_ids(self):
         return self.simplefetch, self.client
@@ -113,9 +123,93 @@ class SimpleFetch:
             print("caught exception when setting joint motor control")
             raise e
 
+    def get_block_position(self, block:Block) -> Pose:
+        return Pose(0,0,0)
+
+    def check_collision_height(self) -> Tuple[float, bool]:
+        """
+        if we place a block right now, at what height will it collide with
+        something? When we place it, are we placing it at an x/y position that
+        lends itself to the block staying there, or are we placing it
+        off-coverage (leading to an unstable placement)?
+        @returns (collision_height, True if fully covered else False)
+        """
+        if self.grasped_block is None:
+            return self.TABLE_HEIGHT, True
+
+        for block in self.blocks:
+            if self.grasped_block == block:
+                # this is the block we're already holding, skip
+                pass
+            # at what distance between two blocks can we guarantee that a collision is not taking place?
+            clearance_distance = block_size_data[self.grasped_block].width + block_size_data[block].width
+            # at what distance between two blocks can we guarantee that a block is fully supported by the other?
+            coverage_distance = (block_size_data[self.grasped_block].width - block_size_data[block].width)/2
+            block_distance = self.get_block_position(block)
+
+            # we make use of the fact that blocks have no rotation here, so we
+            # can check x and y independently to check for not-fully-covered
+            # collision independently. Check first for a lack of clearance,
+            # then check for lack of full coverage.
+            if block_distance.x < clearance_distance or \
+               block_distance.y < clearance_distance:
+                   return (block_size_data[block].height, (coverage_distance < block_distance.x and coverage_distance < block_distance.y))
+
+        # no block collisions, we're only over the table.
+        return (self.TABLE_HEIGHT, True)
+
+    def interact(self, collision_height:float, target_block:Block=None):
+        # either we're holding a block, in which case we go down to the
+        # appropriate height plus half of the currently held block then release
+        # and go back up, or we aren't holding a block, in which case we go
+        # down to the appropriate height minus half of the goal holding block
+        # to close to the block height and go back up
+        if self.grasped_block is Block.NONE:
+            # holding a block: the height we care about will be
+            # collision_height plus what's sticking out of the gripper
+            grasp_height = collision_height + self.GRIPPER_OFFSET + (block_size_data[self.grasped_block].height/2)
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=grasp_height)
+            self.open_gripper()
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
+        else:
+            # not holding a block: the height we care about will be the
+            # collision height minus half the block height to ensure we're
+            # interacting with it
+            if target_block is None:
+                target_block = Block.NONE
+            grasp_height = collision_height + self.GRIPPER_OFFSET - (block_size_data[target_block].height/2)
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=grasp_height)
+            self.close_gripper()
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
+
+    def open_gripper(self):
+        p.setJointMotorControl2(self.simplefetch, self.gripper_left_joint,
+                p.POSITION_CONTROL, targetPosition=self.OPEN)
+        p.setJointMotorControl2(self.simplefetch, self.gripper_right_joint,
+                p.POSITION_CONTROL, targetPosition=self.OPEN)
+
+    def close_gripper(self):
+        p.setJointMotorControl2(self.simplefetch, self.gripper_left_joint,
+                p.POSITION_CONTROL, targetPosition=self.CLOSE)
+        p.setJointMotorControl2(self.simplefetch, self.gripper_right_joint,
+                p.POSITION_CONTROL, targetPosition=self.CLOSE)
+
+    def inform_world_states(self, blocks:List[Block], block_ids):
+        self.blocks = blocks
+        self.block_ids = block_ids
+
     def apply_action(self, action: Action):
         print("Provided new goal to obtain: "+str(action))
-        return self.to_position_by_pose(action)
+        self.to_position_by_pose(action)
+        height, covereage = self.check_collision_height()
+        if action.z_interact:
+            self.interact(height)
+
+        return covereage
 
     def get_observation(self) -> Observation:
         position = [0, 0, 0]
