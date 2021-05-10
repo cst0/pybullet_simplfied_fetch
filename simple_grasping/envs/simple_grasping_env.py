@@ -16,8 +16,8 @@ class SimpleFetchEnv(gym.Env):
         self.table_y_max = 0.5
         self.padding_space = 0.01
 
-        self.blocks = []
-        self.block_ids = []
+        self.blocks:List[Block] = []
+        self.block_ids:List[int] = []
 
         self.action_space = Box(
             low=np.array([
@@ -115,19 +115,16 @@ class SimpleFetchEnv(gym.Env):
             joinedpath = os.sep.join(stripped)
             filename = os.path.join(joinedpath, 'resources', meshname)
             print("Going to load URDF file "+str(filename))
-            self.blocks.append(p.loadURDF(fileName=filename,
+            self.block_ids.append(p.loadURDF(fileName=filename,
                     basePosition=[block_positions[n].x, block_positions[n].y, block_positions[n].z],
                     physicsClientId=self.client))
-            self.block_ids.append(blocks[n])
+            self.blocks.append(blocks[n])
 
     def generate_valid_table_position(self):
         return Pose(
                 np.random.uniform(self.table_x_min, self.table_x_max),
                 np.random.uniform(self.table_y_min, self.table_y_max),
                 0, 0)
-
-    def get_block_position(self, block:Block) -> Pose:
-        return Pose(0,0,0)
 
     def reset(self):
         p.resetSimulation(self.client)
