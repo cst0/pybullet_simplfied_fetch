@@ -1,6 +1,7 @@
 #from gym.core import ObservationWrapper
 from simple_grasping.standard_interfaces import Action, AgentState, Block, Observation, Pose, urdf_string_data, block_size_data
 import pybullet as p
+import pybullet_data
 import os
 from time import sleep
 from typing import List, Tuple
@@ -25,18 +26,15 @@ class SimpleFetch:
         self.CLOSE = 0.0
         self.TABLE_HEIGHT = 0.0 # handled by the urdf, so 0
 
-
-        #p.loadURDF("plane.urdf")
-        p.setAdditionalSearchPath("./resources/")
-        p.setAdditionalSearchPath("./resources/meshes")
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.loadURDF("plane.urdf")
         filename = os.path.join(os.path.dirname(__file__), 'simplefetch.urdf')
         print("Going to load URDF file "+str(filename))
         self.simplefetch = p.loadURDF(fileName=filename,
-                basePosition=[0,0,0.3625],
+                basePosition=[0.0, 0.0, 0.3625],
                 physicsClientId=client)
 
         self.open_gripper()
-
         p.stepSimulation()
 
         self.grasped_block:Block = Block.NONE

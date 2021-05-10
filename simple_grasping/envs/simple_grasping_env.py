@@ -5,7 +5,7 @@ import pybullet as p
 from gym.spaces import Box
 from simple_grasping.resources.simplefetch import SimpleFetch
 from simple_grasping.standard_interfaces import Action, Pose, Block, block_size_data
-from typing import List, Tuple
+from typing import List
 
 class SimpleFetchEnv(gym.Env):
     def __init__(self):
@@ -14,6 +14,7 @@ class SimpleFetchEnv(gym.Env):
         self.table_y_min = -0.5
         self.table_y_max = 0.5
         self.padding_space = 0.01
+        self.TABLE_HEIGHT = 0.725
 
         self.blocks:List[Block] = []
         self.block_ids:List[int] = []
@@ -104,7 +105,7 @@ class SimpleFetchEnv(gym.Env):
         # assume all theta's should be 0 and then we actually get to work
         # placing that stuff
         for n in range(0, len(blocks)):
-            block_positions[n].z = (block_size_data[blocks[n]].height / 2) + self.padding_space
+            block_positions[n].z = (block_size_data[blocks[n]].height / 2) + self.padding_space + self.TABLE_HEIGHT
             block_positions[n].theta = 0
             p.setAdditionalSearchPath("../resources/")
             meshname = block_size_data[blocks[n]].mesh
