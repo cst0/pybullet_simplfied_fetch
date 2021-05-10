@@ -17,7 +17,7 @@ class SimpleFetchEnv(gym.Env):
         self.padding_space = 0.01
 
         self.blocks = []
-        self.block_ids = []
+        self.block_ids = List(Block)
 
         self.action_space = Box(
             low=np.array([

@@ -1,5 +1,5 @@
-from gym.core import ObservationWrapper
-from simple_grasping.standard_interfaces import Action, AgentState, Observation, Pose, urdf_string_data
+#from gym.core import ObservationWrapper
+from simple_grasping.standard_interfaces import Action, AgentState, Block, Observation, Pose, urdf_string_data, block_size_data
 import pybullet as p
 import os
 from time import sleep
@@ -18,7 +18,7 @@ class SimpleFetch:
 #        sleep(1)
         p.stepSimulation()
 
-        self.grasped_block = None
+        self.grasped_block:Block = Block.NONE
 
 #        print("Loaded fetch with joints:")
 #        for n in range(0, p.getNumJoints(self.simplefetch)):
@@ -31,6 +31,8 @@ class SimpleFetch:
         self.z_axis_joint = urdf_string_data["table_to_gripper_z"]
         self.MAXSPEED = 0.5
         self.POSITION_THRESHOLD = 0.025
+        self.GRIPPER_OFFSET = 0.2
+        self.MOVEMENT_PLANE = 1
 
     def get_ids(self):
         return self.simplefetch, self.client
@@ -112,6 +114,40 @@ class SimpleFetch:
         except Exception as e:
             print("caught exception when setting joint motor control")
             raise e
+
+    def interact(self, collision_height:float, target_block:Block=None) -> bool:
+        # either we're holding a block, in which case we go down to the
+        # appropriate height plus half of the currently held block then release
+        # and go back up, or we aren't holding a block, in which case we go
+        # down to the appropriate height minus half of the goal holding block
+        # to close to the block height and go back up
+        if self.grasped_block is Block.NONE:
+            # holding a block: the height we care about will be
+            # collision_height plus what's sticking out of the gripper
+            grasp_height = collision_height + self.GRIPPER_OFFSET + (block_size_data[self.grasped_block].height/2)
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=grasp_height)
+            self.open_gripper()
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
+        else:
+            # not holding a block: the height we care about will be the
+            # collision height minus half the block height to ensure we're
+            # interacting with it
+            if target_block is None:
+                target_block = Block.NONE
+            grasp_height = collision_height + self.GRIPPER_OFFSET - (block_size_data[target_block].height/2)
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=grasp_height)
+            self.close_gripper(target_block)
+            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+                    p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
+
+    def open_gripper(self):
+        pass
+
+    def close_gripper(self, target:Block):
+        pass
 
     def apply_action(self, action: Action):
         print("Provided new goal to obtain: "+str(action))
