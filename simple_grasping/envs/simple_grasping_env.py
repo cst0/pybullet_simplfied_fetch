@@ -9,7 +9,6 @@ from typing import List, Tuple
 
 class SimpleFetchEnv(gym.Env):
     def __init__(self):
-        self.table_height = 0.3625
         self.table_x_min = -0.5
         self.table_x_max = 0.5
         self.table_y_min = -0.5
@@ -105,7 +104,7 @@ class SimpleFetchEnv(gym.Env):
         # assume all theta's should be 0 and then we actually get to work
         # placing that stuff
         for n in range(0, len(blocks)):
-            block_positions[n].z = self.table_height + (block_size_data[blocks[n]].height / 2) + self.padding_space
+            block_positions[n].z = (block_size_data[blocks[n]].height / 2) + self.padding_space
             block_positions[n].theta = 0
             p.setAdditionalSearchPath("../resources/")
             meshname = block_size_data[blocks[n]].mesh

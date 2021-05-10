@@ -8,6 +8,24 @@ from typing import List, Tuple
 class SimpleFetch:
     def __init__(self, client):
         self.client = client
+
+        self.X_AXIS_JOINT = urdf_string_data["table_to_gripper_x"]
+        self.Y_AXIS_JOINT = urdf_string_data["table_to_gripper_y"]
+        self.Z_AXIS_JOINT = urdf_string_data["table_to_gripper_z"]
+        self.GRIPPER_LEFT_JOINT = urdf_string_data["gripper_to_finger_left"]
+        self.GRIPPER_RIGHT_JOINT = urdf_string_data["gripper_to_finger_right"]
+
+        self.MAXSPEED = 0.5
+        self.POSITION_THRESHOLD = 0.025
+        self.GRIPPER_OFFSET = 0.2
+        self.MOVEMENT_PLANE = 0.1
+        for b in block_size_data.keys():
+            self.MOVEMENT_PLANE += block_size_data[b].height
+        self.OPEN = 0.048
+        self.CLOSE = 0.0
+        self.TABLE_HEIGHT = 0.0 # handled by the urdf, so 0
+
+
         #p.loadURDF("plane.urdf")
         p.setAdditionalSearchPath("./resources/")
         p.setAdditionalSearchPath("./resources/meshes")
@@ -16,7 +34,9 @@ class SimpleFetch:
         self.simplefetch = p.loadURDF(fileName=filename,
                 basePosition=[0,0,0.3625],
                 physicsClientId=client)
-#        sleep(1)
+
+        self.open_gripper()
+
         p.stepSimulation()
 
         self.grasped_block:Block = Block.NONE
@@ -28,19 +48,6 @@ class SimpleFetch:
 #            joint = p.getJointState(self.simplefetch, n)
 #            print(joint)
 #            print(str(joint[0]) + ": " + joint[2].decode())
-
-        self.x_axis_joint = urdf_string_data["table_to_gripper_x"]
-        self.y_axis_joint = urdf_string_data["table_to_gripper_y"]
-        self.z_axis_joint = urdf_string_data["table_to_gripper_z"]
-        self.gripper_left_joint = urdf_string_data["gripper_to_finger_left"]
-        self.gripper_right_joint = urdf_string_data["gripper_to_finger_right"]
-        self.MAXSPEED = 0.5
-        self.POSITION_THRESHOLD = 0.025
-        self.GRIPPER_OFFSET = 0.2
-        self.MOVEMENT_PLANE = 1
-        self.OPEN = 0.35
-        self.CLOSE = 0.0
-        self.TABLE_HEIGHT = .365
 
     def get_ids(self):
         return self.simplefetch, self.client
@@ -71,8 +78,8 @@ class SimpleFetch:
         x_goal, x_vel, y_goal, y_vel = self.produce_xyvel(action)
         try:
             print("setting velocity to "+str(x_vel)+", "+str(y_vel)+" on "+str(self.simplefetch))
-            p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=x_vel)
-            p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=y_vel)
+            p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
+            p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
 
             keep_moving = True
             while keep_moving:
@@ -87,16 +94,16 @@ class SimpleFetch:
                 if abs(max(x_now, x_goal) - min(x_now, x_goal)) < self.POSITION_THRESHOLD:
                     print("completed x")
                     x_finished = True
-                    p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=0)
+                    p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
                     if not y_finished:
-                        p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
+                        p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
 
                 if abs(max(y_now, y_goal) - min(y_now, y_goal)) < self.POSITION_THRESHOLD:
                     print("completed y")
                     y_finished = True
-                    p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.VELOCITY_CONTROL, targetVelocity=0)
+                    p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
                     if not x_finished:
-                        p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
+                        p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.MAXSPEED)
 
                 keep_moving = not ( x_finished and y_finished )
 
@@ -110,8 +117,8 @@ class SimpleFetch:
         y_abs = agent_state.y + action.y_dist
 
         try:
-            p.setJointMotorControl2(self.simplefetch, self.x_axis_joint, p.POSITION_CONTROL, targetPosition=x_abs)
-            p.setJointMotorControl2(self.simplefetch, self.y_axis_joint, p.POSITION_CONTROL, targetPosition=y_abs)
+            p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=x_abs)
+            p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=y_abs)
             p.stepSimulation()
             sleep(1/60)
             #while \
@@ -168,10 +175,10 @@ class SimpleFetch:
             # holding a block: the height we care about will be
             # collision_height plus what's sticking out of the gripper
             grasp_height = collision_height + self.GRIPPER_OFFSET + (block_size_data[self.grasped_block].height/2)
-            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
                     p.POSITION_CONTROL, targetPosition=grasp_height)
             self.open_gripper()
-            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
                     p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
         else:
             # not holding a block: the height we care about will be the
@@ -180,22 +187,22 @@ class SimpleFetch:
             if target_block is None:
                 target_block = Block.NONE
             grasp_height = collision_height + self.GRIPPER_OFFSET - (block_size_data[target_block].height/2)
-            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
                     p.POSITION_CONTROL, targetPosition=grasp_height)
             self.close_gripper()
-            p.setJointMotorControl2(self.simplefetch, self.z_axis_joint,
+            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
                     p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
 
     def open_gripper(self):
-        p.setJointMotorControl2(self.simplefetch, self.gripper_left_joint,
-                p.POSITION_CONTROL, targetPosition=self.OPEN)
-        p.setJointMotorControl2(self.simplefetch, self.gripper_right_joint,
+        p.setJointMotorControl2(self.simplefetch, self.GRIPPER_LEFT_JOINT,
+                p.POSITION_CONTROL, targetPosition=-self.OPEN)
+        p.setJointMotorControl2(self.simplefetch, self.GRIPPER_RIGHT_JOINT,
                 p.POSITION_CONTROL, targetPosition=self.OPEN)
 
     def close_gripper(self):
-        p.setJointMotorControl2(self.simplefetch, self.gripper_left_joint,
+        p.setJointMotorControl2(self.simplefetch, self.GRIPPER_LEFT_JOINT,
                 p.POSITION_CONTROL, targetPosition=self.CLOSE)
-        p.setJointMotorControl2(self.simplefetch, self.gripper_right_joint,
+        p.setJointMotorControl2(self.simplefetch, self.GRIPPER_RIGHT_JOINT,
                 p.POSITION_CONTROL, targetPosition=self.CLOSE)
 
     def inform_world_states(self, blocks:List[Block], block_ids):

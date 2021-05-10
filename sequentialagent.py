@@ -11,5 +11,4 @@ class SequentialAgent:
         self.actions.append(Action(0, 0, True))
 
     def choose_action(self, observation:Observation) -> Action:
-        sleep(2)
-        return Action(0,0,False) if len(self.actions) is not 0 else self.actions.pop(0)
+        return Action(0,0,False) if len(self.actions) is 0 else self.actions.pop(0)
