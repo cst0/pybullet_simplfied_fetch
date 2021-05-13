@@ -116,20 +116,20 @@ class SimpleFetch:
                 )
         return x_goal, x_vel, y_goal, y_vel
 
-    def to_position_by_velocity(self, action:Action, override_z=None):
+    def to_position_by_velocity(self, action:Action):
         current = AgentState(self.simplefetch)
         goal = Pose(
                 current.pose.x + action.x_dist,
                 current.pose.y + action.y_dist,
-                self.MOVEMENT_PLANE if override_z is None else override_z
+                self.MOVEMENT_PLANE
                 )
         goal = self.force_within_bounds(goal)
+
         try:
             x_finished = False
             y_finished = False
-            z_finished = False if override_z is not None else True
 
-            while not x_finished or not y_finished or not z_finished:
+            while not x_finished or not y_finished:
                 if self.out_of_bounds():
                     print("need to reset fetch position (out of bounds): "+str(goal))
                     self.reset_position()
@@ -156,11 +156,7 @@ class SimpleFetch:
                 p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
                 p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
 
-                if override_z is not None and x_finished and y_finished: # hold off on z movement until we're safely above
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
-                    z_finished = True
-                else:
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
 
                 # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
                 if x_diff < self.POSITION_THRESHOLD:
@@ -169,9 +165,6 @@ class SimpleFetch:
                 if y_diff < self.POSITION_THRESHOLD:
                     y_finished = True
 
-                if z_diff < self.POSITION_THRESHOLD:
-                    z_finished = True
-
                 if DEBUGMODE:
                     print(
                             "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+","+str(round(goal.z, 4))+"]",
@@ -179,6 +172,30 @@ class SimpleFetch:
                             "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))
                             )
                 p.stepSimulation()
+
+            if action.z_interact:
+                print("interacting...")
+                if self.grasped_block is Block.NONE:
+                    print("grabbing")
+                    # we're not currently holding a block. Are we near one we can grab?
+                    min_index = 0
+                    for n in range(0, len(self.blocks)):
+                        if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
+                            min_index = n
+                    print("picking up "+str(self.blocks[min_index]))
+                    self.grasped_block = self.blocks[min_index].btype
+                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.MAXSPEED/2)
+                    ee_prev = self.get_ee_position()
+                    p.stepSimulation()
+                    ee_curr = self.get_ee_position()
+                    while abs(max(ee_prev.z, ee_curr.z) - min(ee_prev.z, ee_curr.z)) > self.POSITION_THRESHOLD:
+                        p.stepSimulation()
+                        ee_prev = ee_curr
+                        ee_curr = self.get_ee_position()
+
+                else:
+                    print("placing "+str(self.grasped_block))
+                    self.grasped_block = Block.NONE
 
         except Exception as e:
             print("caught exception when setting joint motor control")
@@ -194,68 +211,10 @@ class SimpleFetch:
             p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_abs)
             for _ in range(0, 10):
                 p.stepSimulation()
-            #while \
-            #        abs(max(x_abs, agent_state.x) - min(x_abs, agent_state.x)) > self.POSITION_THRESHOLD and \
-            #        abs(max(y_abs, agent_state.y) - min(y_abs, agent_state.y)) > self.POSITION_THRESHOLD:
-            #            agent_state = AgentState(self.simplefetch)
 
         except Exception as e:
             print("caught exception when setting joint motor control")
             raise e
-
-#    def check_collision_height(self) -> Tuple[float, bool]:
-#        """
-#        if we place a block right now, at what height will it collide with
-#        something? When we place it, are we placing it at an x/y position that
-#        lends itself to the block staying there, or are we placing it
-#        off-coverage (leading to an unstable placement)?
-#        @returns (collision_height, True if fully covered else False)
-#        """
-#        if self.grasped_block is None:
-#            print("coverage says no blocks")
-#            return self.TABLE_HEIGHT, True
-#
-#        grasp_candidates = []
-#        for block in self.blocks:
-#            if self.grasped_block == block:
-#                # this is the block we're already holding, skip
-#                pass
-#            # at what distance between two blocks can we guarantee that a collision is not taking place?
-#            clearance_distance = block_size_data[self.grasped_block].width + block.shape.width
-#            # at what distance between two blocks can we guarantee that a block is fully supported by the other?
-#            coverage_distance = (block_size_data[self.grasped_block].width - block.shape.width)/2
-#            block_distance = block.position()
-#            block_distance = Pose(
-#                _x = abs(max(block.position().x, self.get_ee_position().x) - min(block.position().x, self.get_ee_position().x)),
-#                _y = abs(max(block.position().y, self.get_ee_position().y) - min(block.position().y, self.get_ee_position().y)),
-#                _z = 0
-#                )
-#
-#            # we make use of the fact that blocks have no rotation here, so we
-#            # can check x and y independently to check for not-fully-covered
-#            # collision independently. Check first for a lack of clearance,
-#            # then check for lack of full coverage.
-#            if block_distance.x < clearance_distance or \
-#               block_distance.y < clearance_distance:
-#                   grasp_candidates.append([block, (coverage_distance < block_distance.x and coverage_distance < block_distance.y), min(block_distance.x, block_distance.y)])
-#
-#        if len(grasp_candidates) == 0:
-#            # no block collisions, we're only over the table.
-#            print("coverage says above table")
-#            return (self.TABLE_HEIGHT, True)
-#        elif len(grasp_candidates) == 1:
-#            print("coverage says above "+str(grasp_candidates[0][0]))
-#            return grasp_candidates[0][0].shape.height, grasp_candidates[0][1]
-#        else:
-#            max_index = 0
-#            for n in range(0, len(grasp_candidates)):
-#                if grasp_candidates[max_index][2] < grasp_candidates[n][2]:
-#                    max_index = n
-##                if grasp_candidates[max_index][0].shape.height < grasp_candidates[n][0].shape.height:
-##                    max_index = n
-#            print("coverage says above "+str(grasp_candidates[max_index][0]))
-#            return grasp_candidates[max_index][0].shape.height, grasp_candidates[max_index][1]
-
 
     def open_gripper(self):
         p.setJointMotorControl2(self.simplefetch, self.GRIPPER_LEFT_JOINT,
@@ -275,47 +234,6 @@ class SimpleFetch:
         dx = ee.x - bp.x
         dy = ee.y - bp.y
         return sqrt(dx*dx + dy*dy)
-
-    def pickup(self):
-        # we're not currently holding a block. Are we near one we can grab?
-        min_index = 0
-        for n in range(0, len(self.blocks)):
-            if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
-                min_index = n
-        print("picking up "+str(self.blocks[min_index]))
-        p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.MAXSPEED)
-        for _ in range(0, 10):
-            p.stepSimulation()
-        self.grasped_block = self.blocks[min_index].btype
-        self.to_position_by_velocity(Action(0,0,False))
-
-    def place(self):
-        print("placing "+str(self.grasped_block))
-        self.grasped_block = Block.NONE
-        pass
-
-    def interact(self):
-        if self.grasped_block is Block.NONE:
-            self.pickup()
-        else:
-            self.place()
-
-#    def interact(self):
-#        if self.grasped_block is not Block.NONE:
-#            # holding a block: the height we care about will be
-#            # collision_height plus what's sticking out of the gripper
-#            grasp_height = collision_height + self.GRIPPER_OFFSET + (block_size_data[self.grasped_block].height/2)
-#            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
-#                    p.POSITION_CONTROL, targetPosition=grasp_height)
-#            self.open_gripper()
-#            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
-#                    p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
-#        else:
-#            grasp_candidates = []
-#            for block in self.blocks:
-#                if abs(max(block.position().x, self.get_ee_position().x) - min(block.position().x, self.get_ee_position().x)) < self.GRASP_TOLERANCE and \
-#                   abs(max(block.position().y, self.get_ee_position().y) - min(block.position().y, self.get_ee_position().y)) < self.GRASP_TOLERANCE:
-#                    grasp_candidates.append(block)
 
     def inform_world_states(self, blocks:List[BlockObject]):
         self.blocks = blocks
@@ -341,12 +259,7 @@ class SimpleFetch:
         p.stepSimulation()
 
     def apply_action(self, action: Action):
-        self.to_position_by_velocity(action)
-        result = True
-        if action.z_interact:
-            result = self.interact()
-
-        return result
+        return self.to_position_by_velocity(action)
 
     def get_ee_position(self) -> Pose:
         state = AgentState(self.simplefetch)
