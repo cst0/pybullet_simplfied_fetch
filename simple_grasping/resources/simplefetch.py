@@ -28,15 +28,15 @@ class SimpleFetch:
         self.OPEN = 0.048
         self.CLOSE = 0.0
         self.TABLE_HEIGHT = 0.0 # handled by the urdf, so 0
-        self.X_LIMIT = 0.4
-        self.Y_LIMIT = 0.4
+        self.X_LIMIT = 0.15
+        self.Y_LIMIT = 0.15
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.loadURDF("plane.urdf")
         filename = os.path.join(os.path.dirname(__file__), 'simplefetch.urdf')
         print("Going to load URDF file "+str(filename))
         self.simplefetch = p.loadURDF(fileName=filename,
-                basePosition=[0.0, 0.0, 0.3625],
+                basePosition=[0.0, 0.0, 0.725/2],
                 physicsClientId=client)
 
         p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,

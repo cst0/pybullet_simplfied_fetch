@@ -5,7 +5,7 @@ import time
 from gym.spaces import Box
 from simple_grasping.resources.simplefetch import SimpleFetch
 from simple_grasping.resources.blockobject import BlockObject
-from simple_grasping.standard_interfaces import Action, Pose, Block
+from simple_grasping.standard_interfaces import Action, Pose, Block, block_size_data
 from typing import List
 
 
@@ -13,12 +13,12 @@ class SimpleFetchEnv(gym.Env):
     def __init__(self):
         self.steps_taken = 0
 
-        self.table_x_min = -0.5
-        self.table_x_max = 0.5
-        self.table_y_min = -0.5
-        self.table_y_max = 0.5
+        self.table_x_min = -0.15
+        self.table_x_max = 0.15
+        self.table_y_min = -0.15
+        self.table_y_max = 0.15
         self.padding_space = 0.01
-        self.TABLE_HEIGHT = 0.325
+        self.TABLE_HEIGHT = 0.725
 
         self.blocks:List[BlockObject] = []
 
@@ -115,7 +115,7 @@ class SimpleFetchEnv(gym.Env):
         # placing that stuff
         for n in range(0, len(blocklist)):
             #block_positions[n].z = (b.shape.height / 2) + self.padding_space + self.TABLE_HEIGHT
-            block_positions[n].z = self.TABLE_HEIGHT + .1
+            block_positions[n].z = self.TABLE_HEIGHT + block_size_data[blocklist[n]].height/2
             block_positions[n].theta = 0
             thisblock = BlockObject(self.client, Pose(block_positions[n].x, block_positions[n].y, block_positions[n].z), blocklist[n])
             self.blocks.append(thisblock)
