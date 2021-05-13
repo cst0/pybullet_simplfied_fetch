@@ -40,7 +40,7 @@
         <parent link="base_link" />
         <child link="x_to_y" />
         <origin xyz="0 0 0" rpy="0 0 0" />
-        <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1" />
+        <limit effort="1000" lower="-50" upper="50" velocity="10" />
         <axis xyz="1 0 0" />
     </joint>
 
@@ -57,7 +57,7 @@
         <parent link="x_to_y" />
         <child link="y_to_z" />
         <origin xyz="0 0 0" rpy="0 0 ${pi/2}" />
-        <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1" />
+        <limit effort="1000" lower="-50" upper="50" velocity="10" />
         <axis xyz="1 0 0" />
     </joint>
 
@@ -74,7 +74,7 @@
         <parent link="y_to_z" />
         <child link="prismatic_output" />
         <origin xyz="0 0 0" rpy="0 -${pi/2} 0 " />
-        <limit effort="1000" lower="-0.5" upper="0.5" velocity="0.1" />
+        <limit effort="1000" lower="-50" upper="50" velocity="10" />
         <axis xyz="1 0 0" />
     </joint>
 
