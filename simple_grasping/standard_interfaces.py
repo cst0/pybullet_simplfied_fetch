@@ -21,7 +21,7 @@ class Block(Enum):
 
 
 class Shape:
-    def __init__(self, _length:float, _width:float, _height:float, _mesh:str=None):
+    def __init__(self, _length:float, _width:float, _height:float, _mesh:str=''):
         self.length = _length
         self.width = _width
         self.height = _height

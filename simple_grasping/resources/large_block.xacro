@@ -14,13 +14,13 @@
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <visual>
             <geometry>
-                <mesh filename="file://$(cwd)/meshes/80mm.stl"/>
+                <box size="0.08 0.08 0.08"/>
             </geometry>
             <material name="white" />
         </visual>
         <collision>
             <geometry>
-                <mesh filename="file://$(cwd)/meshes/80mm.stl"/>
+                <box size="0.08 0.08 0.08"/>
             </geometry>
         </collision>
         <inertial>

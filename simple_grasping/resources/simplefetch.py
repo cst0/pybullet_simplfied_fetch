@@ -1,10 +1,12 @@
-#from gym.core import ObservationWrapper
-from simple_grasping.standard_interfaces import Action, AgentState, Block, Observation, Pose, urdf_string_data, block_size_data
+from simple_grasping.resources.blockobject import BlockObject
 import pybullet as p
 import pybullet_data
 import os
-from time import sleep
+from simple_grasping.standard_interfaces import Action, AgentState, Block, Observation, Pose, urdf_string_data, block_size_data
 from typing import List, Tuple
+
+DEBUGMODE = False
+
 
 class SimpleFetch:
     def __init__(self, client):
@@ -44,8 +46,7 @@ class SimpleFetch:
         p.stepSimulation()
 
         self.grasped_block:Block = Block.NONE
-        self.blocks:List[Block] = []
-        self.block_ids:List[int] = []
+        self.blocks:List[BlockObject] = []
 
 #        print("Loaded fetch with joints:")
 #        for n in range(0, p.getNumJoints(self.simplefetch)):
@@ -111,12 +112,12 @@ class SimpleFetch:
                 )
         return x_goal, x_vel, y_goal, y_vel
 
-    def to_position_by_velocity(self, action:Action):
+    def to_position_by_velocity(self, action:Action, override_z=None):
         current = AgentState(self.simplefetch)
         goal = Pose(
                 current.pose.x + action.x_dist,
                 current.pose.y + action.y_dist,
-                current.pose.z
+                self.MOVEMENT_PLANE if override_z is None else override_z
                 )
         goal = self.force_within_bounds(goal)
         try:
@@ -124,6 +125,9 @@ class SimpleFetch:
             y_finished = False
 
             while not x_finished or not y_finished:
+                if self.out_of_bounds():
+                    self.reset_position()
+
                 # TODO-- refactor to remove duplicate code
                 now = AgentState(self.simplefetch)
                 x_dir = 1 if now.pose.x < goal.x else -1
@@ -138,6 +142,8 @@ class SimpleFetch:
                 p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
                 p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
 
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
+
                 # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
                 if x_diff < self.POSITION_THRESHOLD:
                     x_finished = True
@@ -145,11 +151,12 @@ class SimpleFetch:
                 if y_diff < self.POSITION_THRESHOLD:
                     y_finished = True
 
-                print(
-                        "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+"]",
-                        "Curr: ["+str(round(now.pose.x, 4))+","+str(round(now.pose.y, 4))+"]",
-                        "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))+"]",
-                        )
+                if DEBUGMODE:
+                    print(
+                            "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+","+str(round(goal.z, 4))+"]",
+                            "Curr: ["+str(round(now.pose.x, 4))+","+str(round(now.pose.y, 4))+","+str(round(now.pose.z))+"]",
+                            "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))+"]",
+                            )
                 p.stepSimulation()
 
         except Exception as e:
@@ -195,9 +202,9 @@ class SimpleFetch:
                 # this is the block we're already holding, skip
                 pass
             # at what distance between two blocks can we guarantee that a collision is not taking place?
-            clearance_distance = block_size_data[self.grasped_block].width + block_size_data[block].width
+            clearance_distance = block_size_data[self.grasped_block].width + block.shape.width
             # at what distance between two blocks can we guarantee that a block is fully supported by the other?
-            coverage_distance = (block_size_data[self.grasped_block].width - block_size_data[block].width)/2
+            coverage_distance = (block_size_data[self.grasped_block].width - block.shape.width)/2
             block_distance = self.get_block_position(block)
 
             # we make use of the fact that blocks have no rotation here, so we
@@ -206,12 +213,12 @@ class SimpleFetch:
             # then check for lack of full coverage.
             if block_distance.x < clearance_distance or \
                block_distance.y < clearance_distance:
-                   return (block_size_data[block].height, (coverage_distance < block_distance.x and coverage_distance < block_distance.y))
+                   return (block.shape.height, (coverage_distance < block_distance.x and coverage_distance < block_distance.y))
 
         # no block collisions, we're only over the table.
         return (self.TABLE_HEIGHT, True)
 
-    def interact(self, collision_height:float, target_block:Block=None):
+    def interact(self, collision_height:float, target_block:BlockObject=None):
         # either we're holding a block, in which case we go down to the
         # appropriate height plus half of the currently held block then release
         # and go back up, or we aren't holding a block, in which case we go
@@ -231,8 +238,9 @@ class SimpleFetch:
             # collision height minus half the block height to ensure we're
             # interacting with it
             if target_block is None:
-                target_block = Block.NONE
-            grasp_height = collision_height + self.GRIPPER_OFFSET - (block_size_data[target_block].height/2)
+                grasp_height = collision_height + self.GRIPPER_OFFSET
+            else:
+                grasp_height = collision_height + self.GRIPPER_OFFSET - (target_block.shape.height/2)
             p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
                     p.POSITION_CONTROL, targetPosition=grasp_height)
             self.close_gripper()
@@ -251,9 +259,29 @@ class SimpleFetch:
         p.setJointMotorControl2(self.simplefetch, self.GRIPPER_RIGHT_JOINT,
                 p.POSITION_CONTROL, targetPosition=self.CLOSE)
 
-    def inform_world_states(self, blocks:List[Block], block_ids):
+    def inform_world_states(self, blocks:List[BlockObject]):
         self.blocks = blocks
-        self.block_ids = block_ids
+
+    def out_of_bounds(self):
+        state = AgentState(self.simplefetch)
+        return abs(state.pose.x) > self.X_LIMIT or abs(state.pose.y) > self.Y_LIMIT
+
+    def reset_position(self):
+        print("reset fetch position.")
+        p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT,
+                p.VELOCITY_CONTROL, targetVelocity=0)
+        p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT,
+                p.VELOCITY_CONTROL, targetVelocity=0)
+        p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
+                p.VELOCITY_CONTROL, targetVelocity=0)
+
+        p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT,
+                p.POSITION_CONTROL, targetPosition=0)
+        p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT,
+                p.POSITION_CONTROL, targetPosition=0)
+        p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT,
+                p.POSITION_CONTROL, targetPosition=self.MOVEMENT_PLANE)
+        p.stepSimulation()
 
     def apply_action(self, action: Action):
         self.to_position_by_velocity(action)

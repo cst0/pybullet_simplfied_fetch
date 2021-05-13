@@ -17,13 +17,13 @@
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <visual>
       <geometry>
-        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/80mm.stl"/>
+        <box size="0.08 0.08 0.08"/>
       </geometry>
       <material name="white"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="file:///home/cst/code/pybullet_simplified_fetch/simple_grasping/resources/meshes/80mm.stl"/>
+        <box size="0.08 0.08 0.08"/>
       </geometry>
     </collision>
     <inertial>
