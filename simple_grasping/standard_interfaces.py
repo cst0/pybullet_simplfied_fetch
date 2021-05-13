@@ -1,7 +1,9 @@
-import pybullet as p
-import numpy as np
-from typing import List
 from enum import Enum
+from typing import List
+import numpy as np
+import os
+import pybullet as p
+import pybullet as p
 
 
 # constants as indexes
@@ -30,20 +32,9 @@ class Shape:
 
 block_size_data = {
         Block.NONE   : Shape(0,  0,  0),
-        Block.SMALL  : Shape(0.050, 0.050, 0.050, _mesh="small_block.urdf"),
-        Block.MEDIUM : Shape(0.070, 0.070, 0.070, _mesh="medium_block.urdf"),
-        Block.LARGE  : Shape(0.090, 0.090, 0.090, _mesh="large_block.urdf"),
-}
-
-
-urdf_string_data = {
-        "start_pose_offset_fixed_joint" : 0,
-        "table_to_gripper_x"            : 1,
-        "table_to_gripper_y"            : 2,
-        "table_to_gripper_z"            : 3,
-        "prismatic_to_gripper"          : 4,
-        "gripper_to_finger_left"        : 5,
-        "gripper_to_finger_right"       : 6
+        Block.SMALL  : Shape(0.050, 0.050, 0.050, _mesh="resources/small_block.urdf"),
+        Block.MEDIUM : Shape(0.070, 0.070, 0.070, _mesh="resources/medium_block.urdf"),
+        Block.LARGE  : Shape(0.090, 0.090, 0.090, _mesh="resources/large_block.urdf"),
 }
 
 
@@ -62,11 +53,62 @@ class Pose:
             "]"
 
 
+class BlockObject:
+    def __init__(self, client, location:Pose=Pose(0,0,0), _type:Block=Block.NONE, nonetype:bool=False):
+        self.client = client
+        self.nonetype = nonetype
+
+        self.shape = block_size_data[_type]
+        self.btype = _type
+        self.start_position = location
+
+        if self.nonetype:
+            return
+
+        filename = os.path.join(os.path.dirname(__file__), block_size_data[_type].mesh)
+        print("Loading block URDF: "+filename+" at "+str(location))
+        self.id = p.loadURDF(fileName=filename,
+                basePosition=[location.x, location.y, location.z],
+                physicsClientId=client)
+
+    def position(self):
+        return Pose(_x=p.getLinkStates(self.id, [0])[0][0][0],
+             _y=p.getLinkStates(self.id, [0])[0][0][1],
+             _z=p.getLinkStates(self.id, [0])[0][0][2])
+
+    def __str__(self):
+        if self.btype == Block.NONE or self.nonetype:
+            return "ID=None"
+
+        typestr = "ID="
+        if self.btype == Block.SMALL:
+            typestr += "S"
+        elif self.btype == Block.MEDIUM:
+            typestr += "M"
+        elif self.btype == Block.LARGE:
+            typestr += "L"
+
+        return typestr + "@" + str(self.position())
+
+
+urdf_string_data = {
+        "start_pose_offset_fixed_joint" : 0,
+        "table_to_gripper_x"            : 1,
+        "table_to_gripper_y"            : 2,
+        "table_to_gripper_z"            : 3,
+        "prismatic_to_gripper"          : 4,
+        "gripper_to_finger_left"        : 5,
+        "gripper_to_finger_right"       : 6
+}
+
+
 class Observation:
-    def __init__(self, _gripper:Pose, _block_positions:List[Pose], _now_grasping:bool=False):
-        self.gripper = _gripper
-        self.block_positions = _block_positions
-        self.now_grasping = _now_grasping
+    def __init__(self):
+        self.gripper:Pose
+        self.grasping:Block
+        self.block_small:BlockObject
+        self.block_medium:BlockObject
+        self.block_large:BlockObject
 
 
 class Action:
