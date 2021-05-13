@@ -14,7 +14,7 @@ class SimpleFetchEnv(gym.Env):
         self.table_y_min = -0.5
         self.table_y_max = 0.5
         self.padding_space = 0.01
-        self.TABLE_HEIGHT = 0.725
+        self.TABLE_HEIGHT = 0.325
 
         self.blocks:List[Block] = []
         self.block_ids:List[int] = []
@@ -73,7 +73,7 @@ class SimpleFetchEnv(gym.Env):
         self.simplefetch.apply_action(action)
         p.stepSimulation()
         self.observe()
-        print(self.observation_space)
+        print("finished step, worldstate: "+str(self.observation_space))
         return self.observation_space, self.compute_reward(), self.finish, None
 
     def compute_reward(self):

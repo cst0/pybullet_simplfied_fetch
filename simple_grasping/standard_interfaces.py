@@ -1,5 +1,5 @@
-from os import XATTR_CREATE
 import pybullet as p
+import numpy as np
 from typing import List
 from enum import Enum
 
@@ -85,30 +85,26 @@ class Action:
 
 
 class AgentState:
-    def __init__(self, urdf, joint:int=4):
+    def __init__(self, urdf, index:int=4):
         self.urdf = urdf
 
-        jointinfo = p.getJointInfo(self.urdf, urdf_string_data["table_to_gripper_x"])[POSITION]
-        self.x = jointinfo[X]
-        self.y = jointinfo[Y]
-        self.z = jointinfo[Z]
-
         self.pose = Pose(
-                _x = self.get_xyz_from_index(joint)[0],
-                _y = self.get_xyz_from_index(joint)[1],
-                _z = self.get_xyz_from_index(joint)[2],
+                _x = self.get_xyz_from_index(index)[0],
+                _y = self.get_xyz_from_index(index)[1],
+                _z = self.get_xyz_from_index(index)[2],
         ) # ee link
         #print(self.pose)  # dbg
         self.finger_distance = self.get_xyz_from_index(5)[1] - self.get_xyz_from_index(6)[1]
 
     def __str__(self):
-        return  " " + str(self.x) +\
-                " " + str(self.y) +\
-                " " + str(self.z) +\
-                " " + str(self.pose)
+        return  " " + str(self.pose.x) +\
+                " " + str(self.pose.y) +\
+                " " + str(self.pose.z)
 
     def get_xyz_from_index(self, index):
-        return p.getLinkStates(self.urdf, [index])[0][0] # this garbage of an api is why we have a wrapper
+        return list([p.getLinkStates(self.urdf, [index])[0][0][0],
+                        p.getLinkStates(self.urdf, [index])[0][0][1],
+                        p.getLinkStates(self.urdf, [index])[0][0][2]])
 
     def get_index_by_name(self, joint):
         # joint-based search of positions by data type
@@ -121,3 +117,12 @@ class AgentState:
             if type(joint) is str:
                 # couldn't find that joint :/
                 return None
+
+# utils
+def random_within(minimum, maximum):
+    rand_float = np.random.random()
+    _range = abs(maximum - minimum)
+    scaled = _range * rand_float
+    shifted = scaled + minimum
+    return shifted
+
