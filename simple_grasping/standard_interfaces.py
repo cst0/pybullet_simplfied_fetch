@@ -103,12 +103,12 @@ urdf_string_data = {
 
 
 class Observation:
-    def __init__(self):
-        self.gripper:Pose
-        self.grasping:Block
-        self.block_small:BlockObject
-        self.block_medium:BlockObject
-        self.block_large:BlockObject
+    def __init__(self, client):
+        self.gripper:Pose            = Pose(0,0,0)
+        self.grasping:Block          = Block.NONE
+        self.block_small:BlockObject = BlockObject(client, nonetype=True)
+        self.block_medium:BlockObject= BlockObject(client, nonetype=True)
+        self.block_large:BlockObject = BlockObject(client, nonetype=True)
 
 
 class Action:
@@ -145,8 +145,8 @@ class AgentState:
 
     def get_xyz_from_index(self, index):
         return list([p.getLinkStates(self.urdf, [index])[0][0][0],
-                        p.getLinkStates(self.urdf, [index])[0][0][1],
-                        p.getLinkStates(self.urdf, [index])[0][0][2]])
+                     p.getLinkStates(self.urdf, [index])[0][0][1],
+                     p.getLinkStates(self.urdf, [index])[0][0][2]])
 
     def get_index_by_name(self, joint):
         # joint-based search of positions by data type

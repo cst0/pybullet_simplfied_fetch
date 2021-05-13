@@ -63,7 +63,7 @@ class SimpleFetchEnv(gym.Env):
         self.client = p.connect(p.GUI)
 
         print("setup worldstate")
-        self.worldstate              = Observation()
+        self.worldstate              = Observation(self.client)
         self.worldstate.gripper      = Pose(0,0,0)
         self.worldstategrasping      = Block.NONE
         self.worldstate.block_small  = BlockObject(self.client, nonetype = True)
@@ -98,7 +98,7 @@ class SimpleFetchEnv(gym.Env):
                           str(self.worldstate.block_large  )
             print(statestring)
 
-        return self.observation_space, self.compute_reward(), self.finish, None
+        return self.worldstate, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
         return 0
@@ -154,7 +154,7 @@ class SimpleFetchEnv(gym.Env):
                 np.random.uniform(-self.simplefetch.Y_LIMIT, self.simplefetch.Y_LIMIT),
                 0, 0)
 
-    def reset(self):
+    def reset(self) -> Observation:
         p.resetSimulation(self.client)
         p.setGravity(0, 0, -9.8)
         self.simplefetch = SimpleFetch(self.client)
@@ -165,7 +165,8 @@ class SimpleFetchEnv(gym.Env):
             self.place_objects([b.btype], [b.start_position])
 
         self.observe()
-        return self.observation_space
+        #return self.observation_space
+        return self.worldstate
 
     def close(self):
         p.disconnect(self.client)
