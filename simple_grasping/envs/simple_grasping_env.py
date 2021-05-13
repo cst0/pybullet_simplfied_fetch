@@ -161,8 +161,8 @@ class SimpleFetchEnv(gym.Env):
                     np.random.uniform(-self.simplefetch.Y_LIMIT, self.simplefetch.Y_LIMIT),
                     0, 0)
             for b in block_positions:  #FIXME: magic numbers
-                if abs(max(b.x, returnme.x) - min(b.x, returnme.x)) < 0.09 or \
-                   abs(max(b.y, returnme.y) - min(b.y, returnme.y)) < 0.09:
+                if abs(max(b.x, returnme.x) - min(b.x, returnme.x)) < 0.07 or \
+                   abs(max(b.y, returnme.y) - min(b.y, returnme.y)) < 0.07:
                        keep_checking = True
 
         return returnme

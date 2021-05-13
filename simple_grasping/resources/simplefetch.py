@@ -174,7 +174,9 @@ class SimpleFetch:
                 p.stepSimulation()
 
             if action.z_interact:
+                print("interacting...")
                 if self.grasped_block is Block.NONE:
+                    print("grabbing")
                     # we're not currently holding a block. Are we near one we can grab?
                     min_index = 0
                     for n in range(0, len(self.blocks)):
@@ -182,8 +184,7 @@ class SimpleFetch:
                             min_index = n
                     print("picking up "+str(self.blocks[min_index]))
                     self.grasped_block = self.blocks[min_index].btype
-                    self.to_position_by_velocity(Action(0,0,False))
-                    p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.MAXSPEED/2)
+                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.MAXSPEED/2)
                     ee_prev = self.get_ee_position()
                     p.stepSimulation()
                     ee_curr = self.get_ee_position()
