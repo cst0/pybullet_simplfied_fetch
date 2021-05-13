@@ -1,11 +1,15 @@
 import gym
 from sequentialagent import SequentialAgent
-from simple_grasping.standard_interfaces import Block, Pose
+from simple_grasping.standard_interfaces import *
 
 def main():
     agent = SequentialAgent()
     env = gym.make('SimpleFetch-v0')
-    env.place_objects([Block.LARGE], [Pose(0,0,0)])
+    env.place_objects([
+            Block.SMALL,
+            Block.MEDIUM,
+            Block.LARGE
+        ])
     observation = env.reset()
     finish = False
     while not finish:
