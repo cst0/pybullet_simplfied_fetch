@@ -4,21 +4,23 @@ import pybullet as p
 import time
 from gym.spaces import Box
 from simple_grasping.resources.simplefetch import SimpleFetch
-from simple_grasping.resources.blockobject import BlockObject
-from simple_grasping.standard_interfaces import Action, Pose, Block
+from simple_grasping.standard_interfaces import *
 from typing import List
+
+
+DEBUGMODE = False
 
 
 class SimpleFetchEnv(gym.Env):
     def __init__(self):
         self.steps_taken = 0
 
-        self.table_x_min = -0.5
-        self.table_x_max = 0.5
-        self.table_y_min = -0.5
-        self.table_y_max = 0.5
+        self.table_x_min = -0.15
+        self.table_x_max = 0.15
+        self.table_y_min = -0.15
+        self.table_y_max = 0.15
         self.padding_space = 0.01
-        self.TABLE_HEIGHT = 0.325
+        self.TABLE_HEIGHT = 0.725
 
         self.blocks:List[BlockObject] = []
 
@@ -60,16 +62,26 @@ class SimpleFetchEnv(gym.Env):
 
         self.client = p.connect(p.GUI)
 
+        print("setup worldstate")
+        self.worldstate              = Observation(self.client)
+        self.worldstate.gripper      = Pose(0,0,0)
+        self.worldstategrasping      = Block.NONE
+        self.worldstate.block_small  = BlockObject(self.client, nonetype = True)
+        self.worldstate.block_medium = BlockObject(self.client, nonetype = True)
+        self.worldstate.block_large  = BlockObject(self.client, nonetype = True)
+
+        print("done setting up worldstate")
         self.goal = None
         self.finish = False
         p.setGravity(0, 0, -9.8)
         self.reset()
 
     def observe(self):
-        gripper_observation = self.simplefetch.get_observation()
-        self.observation[0] = gripper_observation.gripper.x
-        self.observation[1] = gripper_observation.gripper.y
-        self.observation[2] = gripper_observation.gripper.z
+        self.worldstate.gripper      = self.simplefetch.get_ee_position()
+        self.worldstate.grasping     = self.simplefetch.grasped_block
+        self.worldstate.block_small  = self.get_block(Block.SMALL)
+        self.worldstate.block_medium = self.get_block(Block.MEDIUM)
+        self.worldstate.block_large  = self.get_block(Block.LARGE)
 
     def step(self, action: Action):
         self.steps_taken += 1
@@ -78,14 +90,25 @@ class SimpleFetchEnv(gym.Env):
         p.stepSimulation()
         self.observe()
 
-        print("loaded blocks:")
-        for b in self.blocks:
-            print(b.position())
+        if DEBUGMODE:
+            statestring = str(self.worldstate.gripper      )+ ", "+\
+                          str(self.worldstate.grasping     )+ ", "+\
+                          str(self.worldstate.block_small  )+ ", "+\
+                          str(self.worldstate.block_medium )+ ", "+\
+                          str(self.worldstate.block_large  )
+            print(statestring)
 
-        return self.observation_space, self.compute_reward(), self.finish, None
+        return self.worldstate, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
         return 0
+
+    def get_block(self, b:Block) -> BlockObject:
+        for block in self.blocks:
+            if block.btype == b:
+                return block
+
+        return BlockObject(self.client, nonetype=True)
 
     def place_objects(self, blocklist:List[Block], block_positions:List[Pose]=None):
         """
@@ -114,8 +137,9 @@ class SimpleFetchEnv(gym.Env):
         # assume all theta's should be 0 and then we actually get to work
         # placing that stuff
         for n in range(0, len(blocklist)):
-            #block_positions[n].z = (b.shape.height / 2) + self.padding_space + self.TABLE_HEIGHT
-            block_positions[n].z = self.TABLE_HEIGHT + .1
+            if blocklist[n] == Block.NONE:
+                continue
+            block_positions[n].z = self.TABLE_HEIGHT + block_size_data[blocklist[n]].height/2
             block_positions[n].theta = 0
             thisblock = BlockObject(self.client, Pose(block_positions[n].x, block_positions[n].y, block_positions[n].z), blocklist[n])
             self.blocks.append(thisblock)
@@ -130,7 +154,7 @@ class SimpleFetchEnv(gym.Env):
                 np.random.uniform(-self.simplefetch.Y_LIMIT, self.simplefetch.Y_LIMIT),
                 0, 0)
 
-    def reset(self):
+    def reset(self) -> Observation:
         p.resetSimulation(self.client)
         p.setGravity(0, 0, -9.8)
         self.simplefetch = SimpleFetch(self.client)
@@ -141,7 +165,8 @@ class SimpleFetchEnv(gym.Env):
             self.place_objects([b.btype], [b.start_position])
 
         self.observe()
-        return self.observation_space
+        #return self.observation_space
+        return self.worldstate
 
     def close(self):
         p.disconnect(self.client)
