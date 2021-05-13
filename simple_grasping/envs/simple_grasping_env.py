@@ -1,7 +1,6 @@
 import gym
 import numpy as np
 import pybullet as p
-import time
 from gym.spaces import Box
 from simple_grasping.resources.simplefetch import SimpleFetch
 from simple_grasping.standard_interfaces import *
@@ -129,7 +128,9 @@ class SimpleFetchEnv(gym.Env):
             else:
                 print("You've specified more blocks than block positions. Some random positions will be selected for you.")
             for _ in blocklist:
-                block_positions.append(self.generate_valid_table_position())
+                print("Randomly generating positions")
+                pos = self.generate_valid_table_position(block_positions)
+                block_positions.append(pos)
         if len(block_positions) > len(blocklist):
             print("You've specified more block positions than blocks. Some positions will be ignored.")
 
@@ -145,14 +146,26 @@ class SimpleFetchEnv(gym.Env):
             self.blocks.append(thisblock)
         p.stepSimulation()
 
-    def generate_valid_table_position(self):
+    def generate_valid_table_position(self, block_positions):
         if self.simplefetch is None:
+            print("simplefetch is none when attempting to place blocks, resetting")
             self.reset()
 
-        return Pose(
-                np.random.uniform(-self.simplefetch.X_LIMIT, self.simplefetch.X_LIMIT),
-                np.random.uniform(-self.simplefetch.Y_LIMIT, self.simplefetch.Y_LIMIT),
-                0, 0)
+        keep_checking = True
+        returnme = Pose(0,0,-1)
+        # continue randomly generating poses until we get one that isn't in collision
+        while keep_checking:
+            keep_checking = False
+            returnme = Pose(
+                    np.random.uniform(-self.simplefetch.X_LIMIT, self.simplefetch.X_LIMIT),
+                    np.random.uniform(-self.simplefetch.Y_LIMIT, self.simplefetch.Y_LIMIT),
+                    0, 0)
+            for b in block_positions:  #FIXME: magic numbers
+                if abs(max(b.x, returnme.x) - min(b.x, returnme.x)) < 0.09 or \
+                   abs(max(b.y, returnme.y) - min(b.y, returnme.y)) < 0.09:
+                       keep_checking = True
+
+        return returnme
 
     def reset(self) -> Observation:
         p.resetSimulation(self.client)
