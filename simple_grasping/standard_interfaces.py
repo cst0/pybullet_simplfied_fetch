@@ -30,9 +30,9 @@ class Shape:
 
 block_size_data = {
         Block.NONE   : Shape(0,  0,  0),
-        Block.SMALL  : Shape(50, 50, 50, _mesh="small_block.urdf"),
-        Block.MEDIUM : Shape(70, 70, 70, _mesh="medium_block.urdf"),
-        Block.LARGE  : Shape(90, 90, 90, _mesh="large_block.urdf"),
+        Block.SMALL  : Shape(0.050, 0.050, 0.050, _mesh="small_block.urdf"),
+        Block.MEDIUM : Shape(0.070, 0.070, 0.070, _mesh="medium_block.urdf"),
+        Block.LARGE  : Shape(0.090, 0.090, 0.090, _mesh="large_block.urdf"),
 }
 
 
