@@ -75,6 +75,13 @@ class SimpleFetchEnv(gym.Env):
         p.setGravity(0, 0, -9.8)
         self.reset()
 
+    def get_block(self, b:Block) -> BlockObject:
+        for block in self.blocks:
+            if block.btype == b:
+                return block
+
+        return BlockObject(self.client, nonetype=True)
+
     def observe(self):
         self.worldstate.gripper      = self.simplefetch.get_ee_position()
         self.worldstate.grasping     = self.simplefetch.grasped_block
@@ -90,24 +97,17 @@ class SimpleFetchEnv(gym.Env):
         self.observe()
 
         if DEBUGMODE:
-            statestring = str(self.worldstate.gripper      )+ ", "+\
-                          str(self.worldstate.grasping     )+ ", "+\
-                          str(self.worldstate.block_small  )+ ", "+\
-                          str(self.worldstate.block_medium )+ ", "+\
-                          str(self.worldstate.block_large  )
+            statestring = str(self.worldstate.gripper     ) + ", "+\
+                          str(self.worldstate.grasping    ) + ", "+\
+                          str(self.worldstate.block_small ) + ", "+\
+                          str(self.worldstate.block_medium) + ", "+\
+                          str(self.worldstate.block_large )
             print(statestring)
 
         return self.worldstate, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
         return 0
-
-    def get_block(self, b:Block) -> BlockObject:
-        for block in self.blocks:
-            if block.btype == b:
-                return block
-
-        return BlockObject(self.client, nonetype=True)
 
     def place_objects(self, blocklist:List[Block], block_positions:List[Pose]=None):
         """
@@ -178,6 +178,18 @@ class SimpleFetchEnv(gym.Env):
             self.place_objects([b.btype], [b.start_position])
 
         self.observe()
+        self.simplefetch.to_position_by_velocity(
+                Action(
+                    _x_dist=-0.1,
+                    _y_dist=-0.1,
+                    _z_interact=False))
+
+        self.simplefetch.to_position_by_velocity(
+                Action(
+                    _x_dist=0.1,
+                    _y_dist=0.1,
+                    _z_interact=False))
+
         #return self.observation_space
         return self.worldstate
 
