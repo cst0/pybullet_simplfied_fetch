@@ -30,6 +30,48 @@
         </inertial>
     </link>
 
+    <joint name="base_to_cube_x" type="prismatic">
+        <parent link="base_link" />
+        <child link="x_to_y" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <limit effort="1000" lower="-50" upper="50" velocity="10" />
+        <axis xyz="1 0 0" />
+    </joint>
+
+    <link name="x_to_y">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+    </link>
+
+    <joint name="base_to_cube_y" type="prismatic">
+        <parent link="x_to_y" />
+        <child link="y_to_z" />
+        <origin xyz="0 0 0" rpy="0 0 ${pi/2}" />
+        <limit effort="1000" lower="-50" upper="50" velocity="10" />
+        <axis xyz="1 0 0" />
+    </joint>
+
+    <link name="y_to_z">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0" />
+            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+        </inertial>
+    </link>
+
+    <joint name="base_to_cube_z" type="prismatic">
+        <parent link="y_to_z" />
+        <child link="prismatic_output" />
+        <origin xyz="0 0 0" rpy="0 -${pi/2} 0 " />
+        <limit effort="1000" lower="-50" upper="50" velocity="10" />
+        <axis xyz="1 0 0" />
+    </joint>
+
     <!-- workaround for the fact that base links don't have mass/inertia -->
     <joint name="fixed_inertial_joint" type="fixed">
         <child link="inertial_link" />
