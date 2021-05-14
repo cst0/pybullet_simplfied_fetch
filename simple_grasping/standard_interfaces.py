@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List
 import numpy as np
 import os
 import pybullet as p
@@ -71,7 +70,7 @@ class BlockObject:
                 basePosition=[location.x, location.y, location.z],
                 physicsClientId=client)
 
-    def position(self):
+    def position(self) -> Pose:
         return Pose(_x=p.getLinkStates(self.id, [0])[0][0][0],
              _y=p.getLinkStates(self.id, [0])[0][0][1],
              _z=p.getLinkStates(self.id, [0])[0][0][2])
@@ -104,11 +103,14 @@ urdf_string_data = {
 
 class Observation:
     def __init__(self, client):
-        self.gripper:Pose            = Pose(0,0,0)
-        self.grasping:Block          = Block.NONE
-        self.block_small:BlockObject = BlockObject(client, nonetype=True)
-        self.block_medium:BlockObject= BlockObject(client, nonetype=True)
-        self.block_large:BlockObject = BlockObject(client, nonetype=True)
+        self.gripper:Pose             = Pose(0,0,0)
+        self.grasping:Block           = Block.NONE
+        self.block_small:BlockObject  = BlockObject(client, nonetype = True)
+        self.block_medium:BlockObject = BlockObject(client, nonetype = True)
+        self.block_large:BlockObject  = BlockObject(client, nonetype = True)
+
+    def __str__(self):
+        return "Observing:"+str(self.gripper)
 
 
 class Action:
@@ -160,7 +162,7 @@ class AgentState:
                 # couldn't find that joint :/
                 return None
 
-# utils
+
 def random_within(minimum, maximum):
     rand_float = np.random.random()
     _range = abs(maximum - minimum)
