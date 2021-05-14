@@ -12,6 +12,7 @@ Z           = 2
 NAME        = 1
 POSITION    = 14
 ORIENTATION = 15
+TABLE_HEIGHT = 0.725
 
 
 class Block(Enum):
@@ -67,13 +68,24 @@ class BlockObject:
         filename = os.path.join(os.path.dirname(__file__), block_size_data[_type].mesh)
         print("Loading block URDF: "+filename+" at "+str(location))
         self.id = p.loadURDF(fileName=filename,
-                basePosition=[location.x, location.y, location.z],
+                basePosition=[0, 0, TABLE_HEIGHT + self.shape.height/2],
                 physicsClientId=client)
 
+        p.setJointMotorControl2(self.id, 0,
+                p.POSITION_CONTROL, targetPosition=location.x)
+        p.setJointMotorControl2(self.id, 1,
+                p.POSITION_CONTROL, targetPosition=location.y)
+
+        print("Loaded block with joints:")
+        for n in range(0, p.getNumJoints(self.id)):
+            joint = p.getJointState(self.id, n)
+            print(joint)
+
+
     def position(self) -> Pose:
-        return Pose(_x=p.getLinkStates(self.id, [0])[0][0][0],
-             _y=p.getLinkStates(self.id, [0])[0][0][1],
-             _z=p.getLinkStates(self.id, [0])[0][0][2])
+        return Pose(_x=p.getJointState(self.id, 0)[0],
+                    _y=p.getJointState(self.id, 1)[0],
+                    _z=p.getJointState(self.id, 2)[0])
 
     def __str__(self):
         if self.btype == Block.NONE or self.nonetype:
@@ -132,6 +144,7 @@ class AgentState:
     def __init__(self, urdf, index:int=4):
         self.urdf = urdf
 
+        #self.pose = self.pose_from_joint_state()
         self.pose = Pose(
                 _x = self.get_xyz_from_index(index)[0],
                 _y = self.get_xyz_from_index(index)[1],
@@ -144,6 +157,11 @@ class AgentState:
         return  " " + str(self.pose.x) +\
                 " " + str(self.pose.y) +\
                 " " + str(self.pose.z)
+
+    def pose_from_joint_state(self):
+        return Pose(_x=p.getJointState(self.urdf, 0)[0],
+                    _y=p.getJointState(self.urdf, 1)[0],
+                    _z=p.getJointState(self.urdf, 2)[0])
 
     def get_xyz_from_index(self, index):
         return list([p.getLinkStates(self.urdf, [index])[0][0][0],
