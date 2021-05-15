@@ -9,7 +9,7 @@ def main():
             Block.SMALL,
 #            Block.MEDIUM,
 #            Block.LARGE
-        ])
+        ], [Pose(0.1,0.1,0)])
     observation = env.reset()
     finish = False
     while not finish:

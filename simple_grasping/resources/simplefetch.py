@@ -159,7 +159,8 @@ class SimpleFetch:
 
                 p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
                 p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
-                if self.grasped_block == Block.NONE:
+
+                if self.grasped_block != Block.NONE:
                     self.get_block(self.grasped_block).set_xy_vel(x_vel, y_vel)
 
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
@@ -193,6 +194,7 @@ class SimpleFetch:
                             min_index = n
                     print("picking up "+str(self.blocks[min_index]))
                     self.grasped_block = self.blocks[min_index].btype
+
                     p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
                     current_position = self.get_ee_position()
 
@@ -215,7 +217,6 @@ class SimpleFetch:
                 else:
                     print("placing "+str(self.grasped_block))
                     current_position = self.get_ee_position()
-                    #self.get_block(self.grasped_block).set_xy_pos(current_position.x, current_position.y)
                     p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
                     self.get_block(self.grasped_block).set_z(-self.Z_MAXSPEED)
                     goal_z = self.START_POSE.z + (self.get_block(self.grasped_block).shape.height/4) + self.GRIPPER_OFFSET
