@@ -68,24 +68,51 @@ class BlockObject:
         filename = os.path.join(os.path.dirname(__file__), block_size_data[_type].mesh)
         print("Loading block URDF: "+filename+" at "+str(location))
         self.id = p.loadURDF(fileName=filename,
-                basePosition=[0, 0, TABLE_HEIGHT + self.shape.height/2],
-                physicsClientId=client)
+                  basePosition=[0, 0, TABLE_HEIGHT + self.shape.height/2],
+                  physicsClientId=client)
 
-        p.setJointMotorControl2(self.id, 0,
-                p.POSITION_CONTROL, targetPosition=location.x)
-        p.setJointMotorControl2(self.id, 1,
-                p.POSITION_CONTROL, targetPosition=location.y)
-
-        print("Loaded block with joints:")
-        for n in range(0, p.getNumJoints(self.id)):
-            joint = p.getJointState(self.id, n)
-            print(joint)
-
+        p.setJointMotorControl2(self.id, 0, p.POSITION_CONTROL, targetPosition=location.x)
+        p.setJointMotorControl2(self.id, 1, p.POSITION_CONTROL, targetPosition=location.y)
 
     def position(self) -> Pose:
+        if self.nonetype:
+            print("block is nonetype: you're incorrectly trying to get position of block that doesn't exist.")
+            return Pose(0,0,0)
+
+        #position, orientation = p.getBasePositionAndOrientation(self.id)
+        #return Pose(
+        #    _x=position[0],
+        #    _y=position[1],
+        #    _z=position[2],
+        #)
         return Pose(_x=p.getJointState(self.id, 0)[0],
                     _y=p.getJointState(self.id, 1)[0],
                     _z=p.getJointState(self.id, 2)[0])
+
+    def set_xy_vel(self, x_vel, y_vel):
+        if self.nonetype:
+            return
+
+        p.setJointMotorControl2(self.id, 0,
+                p.VELOCITY_CONTROL, targetVelocity=x_vel)
+        p.setJointMotorControl2(self.id, 1,
+                p.VELOCITY_CONTROL, targetVelocity=y_vel)
+
+    def set_xy_pos(self, x_pos, y_pos):
+        if self.nonetype:
+            return
+
+        p.setJointMotorControl2(self.id, 0,
+                p.POSITION_CONTROL, targetPosition=x_pos)
+        p.setJointMotorControl2(self.id, 1,
+                p.POSITION_CONTROL, targetPosition=y_pos)
+
+    def set_z(self, vel):
+        if self.nonetype:
+           return
+
+        p.setJointMotorControl2(self.id, 2,
+                p.VELOCITY_CONTROL, targetPosition=vel)
 
     def __str__(self):
         if self.btype == Block.NONE or self.nonetype:
@@ -144,13 +171,14 @@ class AgentState:
     def __init__(self, urdf, index:int=4):
         self.urdf = urdf
 
-        #self.pose = self.pose_from_joint_state()
-        self.pose = Pose(
-                _x = self.get_xyz_from_index(index)[0],
-                _y = self.get_xyz_from_index(index)[1],
-                _z = self.get_xyz_from_index(index)[2],
-        ) # ee link
-        #print(self.pose)  # dbg
+        self.pose = self.pose_from_joint_state()
+        #self.pose_old = Pose(
+        #        _x = self.get_xyz_from_index(index)[0],
+        #        _y = self.get_xyz_from_index(index)[1],
+        #        _z = self.get_xyz_from_index(index)[2],
+        #) # ee link
+        #print(self.pose, self.pose_old, Pose(self.pose.x - self.pose_old.x, self.pose.y - self.pose_old.y, self.pose.z, self.pose_old.z))  # dbg
+
         self.finger_distance = self.get_xyz_from_index(5)[1] - self.get_xyz_from_index(6)[1]
 
     def __str__(self):
@@ -159,9 +187,9 @@ class AgentState:
                 " " + str(self.pose.z)
 
     def pose_from_joint_state(self):
-        return Pose(_x=p.getJointState(self.urdf, 0)[0],
-                    _y=p.getJointState(self.urdf, 1)[0],
-                    _z=p.getJointState(self.urdf, 2)[0])
+        return Pose(_x=p.getJointState(self.urdf, 1)[0],
+                    _y=p.getJointState(self.urdf, 2)[0],
+                    _z=p.getJointState(self.urdf, 3)[0])
 
     def get_xyz_from_index(self, index):
         return list([p.getLinkStates(self.urdf, [index])[0][0][0],

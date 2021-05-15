@@ -7,8 +7,8 @@ def main():
     env = gym.make('SimpleFetch-v0')
     env.place_objects([
             Block.SMALL,
-            Block.MEDIUM,
-            Block.LARGE
+#            Block.MEDIUM,
+#            Block.LARGE
         ])
     observation = env.reset()
     finish = False
