@@ -1,7 +1,7 @@
 from enum import Enum
+from typing import List
 import numpy as np
 import os
-import pybullet as p
 import pybullet as p
 
 
@@ -129,6 +129,19 @@ class BlockObject:
         return typestr + "@" + str(self.position())
 
 
+BLOCKTOWER:List[BlockObject] = []
+
+
+def get_tower_top():
+    if len(BLOCKTOWER) == 0:
+        return 0
+    return BLOCKTOWER[-1].position().z + BLOCKTOWER[-1].shape.height/2
+
+
+def set_tower_top(bo: BlockObject):
+    BLOCKTOWER.append(bo)
+
+
 urdf_string_data = {
         "start_pose_offset_fixed_joint" : 0,
         "table_to_gripper_x"            : 1,
@@ -185,6 +198,9 @@ class AgentState:
         return  " " + str(self.pose.x) +\
                 " " + str(self.pose.y) +\
                 " " + str(self.pose.z)
+
+    def vel_from_joint_state(self):
+        return p.getJointState(self.urdf, 3)[1]
 
     def pose_from_joint_state(self):
         return Pose(_x=p.getJointState(self.urdf, 1)[0],
