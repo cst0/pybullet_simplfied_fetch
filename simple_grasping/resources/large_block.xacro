@@ -64,13 +64,13 @@
     <link name="block">
         <visual>
             <geometry>
-                <box size="0.08 0.08 0.08"/>
+                <box size="0.06 0.06 0.06"/>
             </geometry>
             <material name="white" />
         </visual>
         <collision>
             <geometry>
-                <box size="0.08 0.08 0.08"/>
+                <box size="0.06 0.06 0.06"/>
             </geometry>
         </collision>
         <inertial>
