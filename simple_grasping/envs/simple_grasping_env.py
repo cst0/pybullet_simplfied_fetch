@@ -93,9 +93,9 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_medium = self.get_block(Block.MEDIUM)
         self.worldstate.block_large  = self.get_block(Block.LARGE)
         self.tower:List[BlockObject] = BLOCKTOWER
-        self.walled_this_step:bool   = self.simplefetch.walled_this_step
-        self.just_interacted:bool    = self.simplefetch.just_interacted
-        self.interact_success:bool   = self.simplefetch.interact_success
+        #self.walled_this_step:bool   = self.simplefetch.walled_this_step
+        #self.just_interacted:bool    = self.simplefetch.just_interacted
+        #self.interact_success:bool   = self.simplefetch.interact_success
 
     def step(self, action: Action):
         self.steps_taken += 1
