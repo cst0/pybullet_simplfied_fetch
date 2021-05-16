@@ -20,6 +20,7 @@ class SimpleFetchEnv(gym.Env):
         self.table_y_max = 0.15
         self.padding_space = 0.01
         self.TABLE_HEIGHT = 0.725
+        self.NO_SPAWN_IN_CENTER = True
 
         self.blocks:List[BlockObject] = []
 
@@ -188,8 +189,9 @@ class SimpleFetchEnv(gym.Env):
                     np.random.uniform(-self.simplefetch.X_LIMIT, self.simplefetch.X_LIMIT),
                     np.random.uniform(-self.simplefetch.Y_LIMIT, self.simplefetch.Y_LIMIT),
                     0, 0)
-            if abs(returnme.x) < 0.05 or abs(returnme.y) < 0.05: # 1/2 medium + 1/2 large block size
-                keep_checking = True
+            if self.NO_SPAWN_IN_CENTER:
+                if abs(returnme.x) < 0.05 or abs(returnme.y) < 0.05: # 1/2 medium + 1/2 large block size
+                    keep_checking = True
             for b in block_positions:  #FIXME: magic numbers
                 if abs(max(b.x, returnme.x) - min(b.x, returnme.x)) < 0.05 or \
                    abs(max(b.y, returnme.y) - min(b.y, returnme.y)) < 0.05:
