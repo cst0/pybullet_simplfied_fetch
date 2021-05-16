@@ -22,11 +22,9 @@ class Block(Enum):
     LARGE = 3
 
 
-class Failures(Enum):
-    ALLCLEAR = 0
-    NOTHING_UNDER_GRASP = 1
-    ATTEMPTED_GRASP_ALREADY_STACKED = 2
-    ATTEMPTED_GRASP_LARGER_THAN_TOWER = 3
+class ActionOutcomes(Enum):
+    FAILED_INTERACT_NO_OBJECT = 0
+    FAILED_MOVE_TIMEOUT = 10
 
 class Shape:
     def __init__(self, _length:float, _width:float, _height:float, _mesh:str=''):
