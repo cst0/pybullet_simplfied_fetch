@@ -10,9 +10,14 @@ class SequentialAgent:
         self.stepindex += 1
 
         if self.stepindex == 1:
+#            return Action(
+#                    _x_dist=0.1,
+#                    _y_dist=0.1,
+#                    _z_interact=True)
+
             return Action(
-                    _x_dist=observation.block_large.position().x - observation.gripper.x,
-                    _y_dist=observation.block_large.position().y - observation.gripper.y,
+                    _x_dist=observation.block_large.position().x - observation.gripper.x,# + .005,
+                    _y_dist=observation.block_large.position().y - observation.gripper.y,# + .005,
                     _z_interact=True)
         if self.stepindex == 2:
             return Action(
@@ -31,17 +36,17 @@ class SequentialAgent:
                     _y_dist=-observation.gripper.y,
                     _z_interact=True
                 )
-        if self.stepindex == 5:
-            return Action(
-                    _x_dist=observation.block_small.position().x - observation.gripper.x,
-                    _y_dist=observation.block_small.position().y - observation.gripper.y,
-                    _z_interact=True)
-        if self.stepindex == 6:
-            self.stepindex = 0
-            return Action(
-                    _x_dist=-observation.gripper.x,
-                    _y_dist=-observation.gripper.y,
-                    _z_interact=True
-                )
+#        if self.stepindex == 5:
+#            return Action(
+#                    _x_dist=observation.block_small.position().x - observation.gripper.x,
+#                    _y_dist=observation.block_small.position().y - observation.gripper.y,
+#                    _z_interact=True)
+#        if self.stepindex == 6:
+#            self.stepindex = 0
+#            return Action(
+#                    _x_dist=-observation.gripper.x,
+#                    _y_dist=-observation.gripper.y,
+#                    _z_interact=True
+#                )
 
         return Action(0,0,False)
