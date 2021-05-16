@@ -25,6 +25,9 @@ class Block(Enum):
 class ActionOutcomes(Enum):
     FAILED_INTERACT_NO_OBJECT = 0
     FAILED_MOVE_TIMEOUT = 10
+    FAILED_MOVE_OUT_OF_BOUNDS = 11
+    ACTION_JUST_GRABBED_BLOCK = 20
+    ACTION_JUST_RELEASED_BLOCK = 21
 
 class Shape:
     def __init__(self, _length:float, _width:float, _height:float, _mesh:str=''):
@@ -171,7 +174,6 @@ class Observation:
         self.block_large:BlockObject  = BlockObject(client, nonetype = True)
         self.tower:List[BlockObject]  = []
         self.walled_this_step:bool    = False
-        self.just_interacted:bool     = False
         self.interact_success:bool    = False
 
     def __str__(self):

@@ -69,9 +69,6 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_medium = BlockObject(self.client, nonetype = True)
         self.worldstate.block_large  = BlockObject(self.client, nonetype = True)
         self.tower:List[BlockObject]  = []
-        self.walled_this_step:bool    = False
-        self.just_interacted:bool     = False
-        self.interact_success:bool    = False
 
         print("done setting up worldstate")
         self.goal = None
@@ -93,9 +90,6 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_medium = self.get_block(Block.MEDIUM)
         self.worldstate.block_large  = self.get_block(Block.LARGE)
         self.tower:List[BlockObject] = BLOCKTOWER
-        #self.walled_this_step:bool   = self.simplefetch.walled_this_step
-        #self.just_interacted:bool    = self.simplefetch.just_interacted
-        #self.interact_success:bool   = self.simplefetch.interact_success
 
     def step(self, action: Action):
         self.steps_taken += 1
@@ -115,7 +109,33 @@ class SimpleFetchEnv(gym.Env):
         return self.worldstate, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
-        return 0
+        reward = 0
+
+        # two consistently maintained blocks that can be accessed for computing reward
+        self.worldstate # Observation object
+        self.tower # list of BlockObjects representing stacked blocks
+
+        # the current top of the tower can be large, medium, small, and that can be rewarded
+        if get_tower_top_type() == Block.LARGE:
+            reward += 1
+        if get_tower_top_type() == Block.MEDIUM:
+            reward += 2
+        if get_tower_top_type() == Block.SMALL:
+            reward += 3
+
+        # verbose_action_results is updated every step to indicate things that happened last step
+        for r in self.simplefetch.verbose_action_results:
+            if r == ActionOutcomes.FAILED_INTERACT_NO_OBJECT:
+                reward -= 1
+            if r == ActionOutcomes.FAILED_MOVE_OUT_OF_BOUNDS:
+                reward -= 5
+            if r == ActionOutcomes.FAILED_MOVE_TIMEOUT:
+                reward -= 10
+            if r == ActionOutcomes.ACTION_JUST_GRABBED_BLOCK:
+                reward += 1
+            if r == ActionOutcomes.ACTION_JUST_RELEASED_BLOCK:
+                reward += 2
+
 
     def place_objects(self, blocklist:List[Block], block_positions:List[Pose]=None):
         """

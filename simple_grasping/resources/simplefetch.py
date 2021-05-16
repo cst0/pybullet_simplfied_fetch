@@ -63,16 +63,23 @@ class SimpleFetch:
         return self.simplefetch, self.client
 
     def force_within_bounds(self, goal:Pose):
+        goal_change = False
         if goal.x > self.X_LIMIT:
+            goal_change = True
             goal.x = self.X_LIMIT
         if goal.x < -self.X_LIMIT:
+            goal_change = True
             goal.x = -self.X_LIMIT
 
         if goal.y > self.Y_LIMIT:
+            goal_change = True
             goal.y = self.Y_LIMIT
         if goal.y < -self.Y_LIMIT:
+            goal_change = True
             goal.y = -self.Y_LIMIT
 
+        if goal_change:
+            self.verbose_action_results.append(ActionOutcomes.FAILED_MOVE_OUT_OF_BOUNDS)
         return goal
 
     def goto_xy_goal(self, goal:Pose):
@@ -243,6 +250,7 @@ class SimpleFetch:
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
                 time.sleep(1/60)
                 self.close_gripper(self.blocks[min_index].shape.width)
+                self.verbose_action_results.append(ActionOutcomes.ACTION_JUST_GRABBED_BLOCK)
 
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.Z_MAXSPEED)
                 goal_z = self.MOVEMENT_PLANE
@@ -281,6 +289,7 @@ class SimpleFetch:
                 self.get_block(self.grasped_block).set_z(0)
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
                 self.open_gripper()
+                self.verbose_action_results.append(ActionOutcomes.ACTION_JUST_RELEASED_BLOCK)
                 set_tower_top(self.get_block(self.grasped_block))
                 self.grasped_block = Block.NONE
                 p.stepSimulation()
