@@ -74,6 +74,58 @@ class SimpleFetch:
 
         return goal
 
+    def goto_xy_goal(self, goal:Pose):
+        x_finished = False
+        y_finished = False
+
+        while not x_finished or not y_finished:
+            if self.out_of_bounds():
+                print("need to reset fetch position (out of bounds): "+str(goal))
+                self.reset_position()
+                print("new goal is: "+str(goal))
+
+            # TODO-- refactor to remove duplicate code
+            now = AgentState(self.simplefetch)
+            x_dir = 1 if now.pose.x < goal.x else -1
+            y_dir = 1 if now.pose.y < goal.y else -1
+
+            x_diff = abs(max(goal.x, now.pose.x) - min(goal.x, now.pose.x))
+            y_diff = abs(max(goal.y, now.pose.y) - min(goal.y, now.pose.y))
+
+            sum_diff = x_diff + y_diff
+            if sum_diff == 0:
+                x_finished = True
+                y_finished = True
+                continue
+
+            x_vel = (x_diff / sum_diff) * self.MAXSPEED * x_dir if x_diff != 0 else 0
+            y_vel = (y_diff / sum_diff) * self.MAXSPEED * y_dir if y_diff != 0 else 0
+
+            p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
+            p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
+
+            if self.grasped_block != Block.NONE:
+                self.get_block(self.grasped_block).set_xy_vel(x_vel, y_vel)
+
+            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
+
+            # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
+            if x_diff < self.POSITION_THRESHOLD:
+                x_finished = True
+
+            if y_diff < self.POSITION_THRESHOLD:
+                y_finished = True
+
+            if DEBUGMODE:
+                print(
+                        "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+","+str(round(goal.z, 4))+"]",
+                        "Curr: ["+str(round(now.pose.x, 4))+","+str(round(now.pose.y, 4))+","+str(round(now.pose.z))+"]",
+                        "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))+"]"
+                        )
+            p.stepSimulation()
+
+
+
     def produce_xyvel(self, goal:Pose):
         state = AgentState(self.simplefetch)
         x_dist = max(state.pose.x, goal.x) - min(state.pose.x, goal.x)
@@ -125,56 +177,28 @@ class SimpleFetch:
                 )
         goal = self.force_within_bounds(goal)
 
+        self.goto_xy_goal(goal)
+
+        if action.z_interact and len(BLOCKTOWER) > 0:
+            min_index = 0
+            for n in range(0, len(self.blocks)):
+                if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
+                    if self.blocks[n] is self.grasped_block:
+                        pass
+                    else:
+                        min_index = n
+            nearest_block = self.blocks[min_index]
+            if self.distance_from_gripper(nearest_block) < self.GRIPPER_BOUNDS_THRESHOLD:
+                # cool, this is a block we are in-range to interact with.
+                goal = Pose(
+                        nearest_block.position().x,
+                        nearest_block.position().y,
+                        self.MOVEMENT_PLANE
+                )
+
+        self.goto_xy_goal(goal)
+
         try:
-            x_finished = False
-            y_finished = False
-
-            while not x_finished or not y_finished:
-                if self.out_of_bounds():
-                    print("need to reset fetch position (out of bounds): "+str(goal))
-                    self.reset_position()
-                    print("new goal is: "+str(goal))
-
-                # TODO-- refactor to remove duplicate code
-                now = AgentState(self.simplefetch)
-                x_dir = 1 if now.pose.x < goal.x else -1
-                y_dir = 1 if now.pose.y < goal.y else -1
-
-                x_diff = abs(max(goal.x, now.pose.x) - min(goal.x, now.pose.x))
-                y_diff = abs(max(goal.y, now.pose.y) - min(goal.y, now.pose.y))
-
-                sum_diff = x_diff + y_diff
-                if sum_diff == 0:
-                    x_finished = True
-                    y_finished = True
-                    continue
-
-                x_vel = (x_diff / sum_diff) * self.MAXSPEED * x_dir if x_diff != 0 else 0
-                y_vel = (y_diff / sum_diff) * self.MAXSPEED * y_dir if y_diff != 0 else 0
-
-                p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
-                p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
-
-                if self.grasped_block != Block.NONE:
-                    self.get_block(self.grasped_block).set_xy_vel(x_vel, y_vel)
-
-                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
-
-                # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
-                if x_diff < self.POSITION_THRESHOLD:
-                    x_finished = True
-
-                if y_diff < self.POSITION_THRESHOLD:
-                    y_finished = True
-
-                if DEBUGMODE:
-                    print(
-                            "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+","+str(round(goal.z, 4))+"]",
-                            "Curr: ["+str(round(now.pose.x, 4))+","+str(round(now.pose.y, 4))+","+str(round(now.pose.z))+"]",
-                            "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))+"]"
-                            )
-                p.stepSimulation()
-
             p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
             p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
             self.get_block(self.grasped_block).set_xy_vel(0, 0)
