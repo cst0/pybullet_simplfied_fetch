@@ -275,9 +275,12 @@ class SimpleFetch:
                 large_block = self.get_block(Block.LARGE)
                 distance_from_large_block = self.distance_from_gripper(large_block)
                 goal_start = 0
+                onblock = False
                 if self.grasped_block != Block.LARGE and\
                         distance_from_large_block < (large_block.shape.width/2 + self.get_block(self.grasped_block).shape.width/2):
                     goal_start = get_tower_top()
+                    if get_tower_top_type() != Block.NONE:
+                        onblock = True
                 goal_z = goal_start + self.START_POSE.z + (self.get_block(self.grasped_block).shape.height/4) + self.GRIPPER_OFFSET
                 timeout_counter = 0
                 while \
@@ -294,6 +297,8 @@ class SimpleFetch:
                     current_speed = abs(self.get_ee_velocity())
                 self.get_block(self.grasped_block).set_z(0)
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
+                if self.grasped_block == Block.LARGE or onblock:
+                    set_tower_top(self.get_block(self.grasped_block))
                 self.open_gripper()
                 self.verbose_action_results.append(ActionOutcomes.ACTION_JUST_RELEASED_BLOCK)
                 set_tower_top(self.get_block(self.grasped_block))
