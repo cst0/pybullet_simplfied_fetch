@@ -26,7 +26,7 @@ class SimpleFetch:
         self.POSITION_THRESHOLD = 0.0001
         self.GRIPPER_BOUNDS_THRESHOLD = 0.05
         self.GRIPPER_OFFSET = 0.0025 # 0.934 when in active collision with object
-        self.ACCEPTABLE_GRAB_SLOP = 0.005
+        self.ACCEPTABLE_GRAB_SLOP = 0.01
 
         self.MOVEMENT_PLANE = 0.01
         for b in block_size_data.keys():
@@ -199,16 +199,21 @@ class SimpleFetch:
         self.goto_xy_goal(goal)
 
         if action.z_interact:
+            print('interact')
             min_index = 0
             for n in range(0, len(self.blocks)):
                 if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
                     if self.blocks[n] is self.grasped_block:
+                        print('ignoring '+str(self.blocks[n]))
                         pass
                     else:
+                        print('min is now '+str(self.blocks[n]))
                         min_index = n
             if len(self.blocks) != 0:
                 nearest_block = self.blocks[min_index]
-                if self.distance_from_gripper(nearest_block) < self.ACCEPTABLE_GRAB_SLOP:
+                print('blocklen != 0, nearest is '+str(nearest_block))
+                if self.distance_from_gripper(nearest_block) < max(self.ACCEPTABLE_GRAB_SLOP, nearest_block.shape.width/2):
+                    print('within grasp slop')
                     # cool, this is a block we are in-range to interact with.
                     goal = Pose(
                             nearest_block.position().x,
@@ -216,6 +221,7 @@ class SimpleFetch:
                             self.MOVEMENT_PLANE
                             )
                 else:
+                    print('outside grasp slop')
                     action.z_interact = False
                     self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NO_OBJECT)
 
