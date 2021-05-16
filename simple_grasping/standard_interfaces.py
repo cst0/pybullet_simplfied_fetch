@@ -25,6 +25,7 @@ class Block(Enum):
 class ActionOutcomes(Enum):
     FAILED_INTERACT_NO_OBJECT = 0
     FAILED_MOVE_TIMEOUT = 10
+    FAILED_MOVE_OUT_OF_BOUNDS = 11
 
 class Shape:
     def __init__(self, _length:float, _width:float, _height:float, _mesh:str=''):

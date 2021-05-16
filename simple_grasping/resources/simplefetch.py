@@ -63,16 +63,23 @@ class SimpleFetch:
         return self.simplefetch, self.client
 
     def force_within_bounds(self, goal:Pose):
+        goal_change = False
         if goal.x > self.X_LIMIT:
+            goal_change = True
             goal.x = self.X_LIMIT
         if goal.x < -self.X_LIMIT:
+            goal_change = True
             goal.x = -self.X_LIMIT
 
         if goal.y > self.Y_LIMIT:
+            goal_change = True
             goal.y = self.Y_LIMIT
         if goal.y < -self.Y_LIMIT:
+            goal_change = True
             goal.y = -self.Y_LIMIT
 
+        if goal_change:
+            self.verbose_action_results.append(ActionOutcomes.FAILED_MOVE_OUT_OF_BOUNDS)
         return goal
 
     def goto_xy_goal(self, goal:Pose):
