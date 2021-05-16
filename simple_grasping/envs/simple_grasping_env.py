@@ -180,16 +180,17 @@ class SimpleFetchEnv(gym.Env):
             self.place_objects([b.btype], [b.start_position])
 
         self.observe()
+        # this hack makes the rest of the grasping work better for some reason.
         self.simplefetch.to_position_by_velocity(
                 Action(
-                    _x_dist=-0.1,
-                    _y_dist=-0.1,
+                    _x_dist=-0.001,
+                    _y_dist=-0.001,
                     _z_interact=False))
 
         self.simplefetch.to_position_by_velocity(
                 Action(
-                    _x_dist=0.1,
-                    _y_dist=0.1,
+                    _x_dist=0.001,
+                    _y_dist=0.001,
                     _z_interact=False))
 
         #return self.observation_space

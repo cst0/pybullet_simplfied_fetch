@@ -21,13 +21,13 @@ class SimpleFetch:
         self.GRIPPER_RIGHT_JOINT = urdf_string_data["gripper_to_finger_right"]
 
         self.MAXSPEED = 0.05
-        self.MAXSPEED = 0.01
         self.STOPPED_SPEED = 0.001
         self.Z_MAXSPEED = 0.01
         self.POSITION_THRESHOLD = 0.0001
         self.GRIPPER_BOUNDS_THRESHOLD = 0.05
         self.GRIPPER_OFFSET = 0.005 # 0.934 when in active collision with object
-        self.MOVEMENT_PLANE = 0.1
+
+        self.MOVEMENT_PLANE = 0.01
         for b in block_size_data.keys():
             self.MOVEMENT_PLANE += block_size_data[b].height
 
@@ -57,12 +57,6 @@ class SimpleFetch:
         self.blocks:List[BlockObject] = []
 
         self.GRASP_TOLERANCE = 0.01 # quarter of smallest block
-
-#        print("Loaded fetch with joints:")
-#        for n in range(0, p.getNumJoints(self.simplefetch)):
-#            joint = p.getJointState(self.simplefetch, n)
-#            print(joint)
-#            print(str(joint[0]) + ": " + joint[2].decode())
 
     def get_ids(self):
         return self.simplefetch, self.client
@@ -251,7 +245,6 @@ class SimpleFetch:
                         p.stepSimulation()
                         current_position = self.get_ee_position()
                     print("done placing")
-
 
         except Exception as e:
             print("caught exception when setting joint motor control")
