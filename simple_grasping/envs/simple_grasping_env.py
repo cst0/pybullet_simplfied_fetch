@@ -68,6 +68,10 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_small  = BlockObject(self.client, nonetype = True)
         self.worldstate.block_medium = BlockObject(self.client, nonetype = True)
         self.worldstate.block_large  = BlockObject(self.client, nonetype = True)
+        self.tower:List[BlockObject]  = []
+        self.walled_this_step:bool    = False
+        self.just_interacted:bool     = False
+        self.interact_success:bool    = False
 
         print("done setting up worldstate")
         self.goal = None
@@ -88,6 +92,10 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_small  = self.get_block(Block.SMALL)
         self.worldstate.block_medium = self.get_block(Block.MEDIUM)
         self.worldstate.block_large  = self.get_block(Block.LARGE)
+        self.tower:List[BlockObject] = BLOCKTOWER
+        #self.walled_this_step:bool   = self.simplefetch.walled_this_step
+        #self.just_interacted:bool    = self.simplefetch.just_interacted
+        #self.interact_success:bool   = self.simplefetch.interact_success
 
     def step(self, action: Action):
         self.steps_taken += 1
@@ -180,16 +188,17 @@ class SimpleFetchEnv(gym.Env):
             self.place_objects([b.btype], [b.start_position])
 
         self.observe()
+        # this hack makes the rest of the grasping work better for some reason.
         self.simplefetch.to_position_by_velocity(
                 Action(
-                    _x_dist=-0.1,
-                    _y_dist=-0.1,
+                    _x_dist=-0.001,
+                    _y_dist=-0.001,
                     _z_interact=False))
 
         self.simplefetch.to_position_by_velocity(
                 Action(
-                    _x_dist=0.1,
-                    _y_dist=0.1,
+                    _x_dist=0.001,
+                    _y_dist=0.001,
                     _z_interact=False))
 
         #return self.observation_space

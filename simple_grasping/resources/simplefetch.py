@@ -21,13 +21,14 @@ class SimpleFetch:
         self.GRIPPER_RIGHT_JOINT = urdf_string_data["gripper_to_finger_right"]
 
         self.MAXSPEED = 0.05
-        self.MAXSPEED = 0.01
         self.STOPPED_SPEED = 0.001
         self.Z_MAXSPEED = 0.01
         self.POSITION_THRESHOLD = 0.0001
         self.GRIPPER_BOUNDS_THRESHOLD = 0.05
-        self.GRIPPER_OFFSET = 0.005 # 0.934 when in active collision with object
-        self.MOVEMENT_PLANE = 0.1
+        self.GRIPPER_OFFSET = 0.0025 # 0.934 when in active collision with object
+        self.ACCEPTABLE_GRAB_SLOP = 0.005
+
+        self.MOVEMENT_PLANE = 0.01
         for b in block_size_data.keys():
             self.MOVEMENT_PLANE += block_size_data[b].height
 
@@ -36,6 +37,7 @@ class SimpleFetch:
         self.TABLE_HEIGHT = 0.0 # handled by the urdf, so 0
         self.X_LIMIT = 0.15
         self.Y_LIMIT = 0.15
+        self.MAX_PSTEPS = 10000 # how many times should pybullet step before we decide it's a lost cause
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.loadURDF("plane.urdf")
@@ -55,14 +57,7 @@ class SimpleFetch:
 
         self.grasped_block:Block = Block.NONE
         self.blocks:List[BlockObject] = []
-
-        self.GRASP_TOLERANCE = 0.01 # quarter of smallest block
-
-#        print("Loaded fetch with joints:")
-#        for n in range(0, p.getNumJoints(self.simplefetch)):
-#            joint = p.getJointState(self.simplefetch, n)
-#            print(joint)
-#            print(str(joint[0]) + ": " + joint[2].decode())
+        self.verbose_action_results:List[ActionOutcomes] = []
 
     def get_ids(self):
         return self.simplefetch, self.client
@@ -79,6 +74,69 @@ class SimpleFetch:
             goal.y = -self.Y_LIMIT
 
         return goal
+
+    def goto_xy_goal(self, goal:Pose):
+        x_finished = False
+        y_finished = False
+
+        timeout_counter = 0
+        while not x_finished or not y_finished:
+            timeout_counter += 1
+            if timeout_counter > self.MAX_PSTEPS:
+                self.verbose_action_results.append(ActionOutcomes.FAILED_MOVE_TIMEOUT)
+                print('failed to complete that movement.')
+                return
+
+            if self.out_of_bounds():
+                print("need to reset fetch position (out of bounds): "+str(goal))
+                self.reset_position()
+                print("new goal is: "+str(goal))
+
+            # TODO-- refactor to remove duplicate code
+            now = AgentState(self.simplefetch)
+            x_dir = 1 if now.pose.x < goal.x else -1
+            y_dir = 1 if now.pose.y < goal.y else -1
+
+            x_diff = abs(max(goal.x, now.pose.x) - min(goal.x, now.pose.x))
+            y_diff = abs(max(goal.y, now.pose.y) - min(goal.y, now.pose.y))
+
+            sum_diff = x_diff + y_diff
+            if sum_diff == 0:
+                x_finished = True
+                y_finished = True
+                continue
+
+            x_vel = (x_diff / sum_diff) * self.MAXSPEED * x_dir if x_diff != 0 else 0
+            y_vel = (y_diff / sum_diff) * self.MAXSPEED * y_dir if y_diff != 0 else 0
+
+            p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
+            p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
+
+            if self.grasped_block != Block.NONE:
+                self.get_block(self.grasped_block).set_xy_vel(x_vel, y_vel)
+
+            p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
+
+            # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
+            if x_diff < self.POSITION_THRESHOLD:
+                x_finished = True
+
+            if y_diff < self.POSITION_THRESHOLD:
+                y_finished = True
+
+            if DEBUGMODE:
+                print(
+                        "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+","+str(round(goal.z, 4))+"]",
+                        "Curr: ["+str(round(now.pose.x, 4))+","+str(round(now.pose.y, 4))+","+str(round(now.pose.z))+"]",
+                        "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))+"]"
+                        )
+            p.stepSimulation()
+
+    def halt(self):
+        p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
+        p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
+        self.get_block(self.grasped_block).set_xy_vel(0, 0)
+        p.stepSimulation()
 
     def produce_xyvel(self, goal:Pose):
         state = AgentState(self.simplefetch)
@@ -131,131 +189,110 @@ class SimpleFetch:
                 )
         goal = self.force_within_bounds(goal)
 
-        try:
-            x_finished = False
-            y_finished = False
+        self.goto_xy_goal(goal)
 
-            while not x_finished or not y_finished:
-                if self.out_of_bounds():
-                    print("need to reset fetch position (out of bounds): "+str(goal))
-                    self.reset_position()
-                    print("new goal is: "+str(goal))
-
-                # TODO-- refactor to remove duplicate code
-                now = AgentState(self.simplefetch)
-                x_dir = 1 if now.pose.x < goal.x else -1
-                y_dir = 1 if now.pose.y < goal.y else -1
-
-                x_diff = abs(max(goal.x, now.pose.x) - min(goal.x, now.pose.x))
-                y_diff = abs(max(goal.y, now.pose.y) - min(goal.y, now.pose.y))
-
-                sum_diff = x_diff + y_diff
-                if sum_diff == 0:
-                    x_finished = True
-                    y_finished = True
-                    continue
-
-                x_vel = (x_diff / sum_diff) * self.MAXSPEED * x_dir if x_diff != 0 else 0
-                y_vel = (y_diff / sum_diff) * self.MAXSPEED * y_dir if y_diff != 0 else 0
-
-                p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
-                p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
-
-                if self.grasped_block != Block.NONE:
-                    self.get_block(self.grasped_block).set_xy_vel(x_vel, y_vel)
-
-                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.POSITION_CONTROL, targetPosition=goal.z)
-
-                # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
-                if x_diff < self.POSITION_THRESHOLD:
-                    x_finished = True
-
-                if y_diff < self.POSITION_THRESHOLD:
-                    y_finished = True
-
-                if DEBUGMODE:
-                    print(
-                            "Goal: ["+str(round(goal.x, 4))+","+str(round(goal.y, 4))+","+str(round(goal.z, 4))+"]",
-                            "Curr: ["+str(round(now.pose.x, 4))+","+str(round(now.pose.y, 4))+","+str(round(now.pose.z))+"]",
-                            "Vel: ["+str(round(x_vel, 4))+","+str(round(y_vel, 4))+"]"
+        if action.z_interact:
+            min_index = 0
+            for n in range(0, len(self.blocks)):
+                if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
+                    if self.blocks[n] is self.grasped_block:
+                        pass
+                    else:
+                        min_index = n
+            if len(self.blocks) != 0:
+                nearest_block = self.blocks[min_index]
+                if self.distance_from_gripper(nearest_block) < self.ACCEPTABLE_GRAB_SLOP:
+                    # cool, this is a block we are in-range to interact with.
+                    goal = Pose(
+                            nearest_block.position().x,
+                            nearest_block.position().y,
+                            self.MOVEMENT_PLANE
                             )
+                else:
+                    action.z_interact = False
+                    self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NO_OBJECT)
+
+        self.goto_xy_goal(goal)
+        self.halt()
+
+        if action.z_interact:
+            if self.grasped_block is Block.NONE:
+                # we're not currently holding a block. Are we near one we can grab?
+                min_index = 0
+                for n in range(0, len(self.blocks)):
+                    if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
+                        min_index = n
+                print("picking up "+str(self.blocks[min_index]))
+                self.grasped_block = self.blocks[min_index].btype
+
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
+                current_position = self.get_ee_position()
+
+                #goal_z = self.START_POSE.z + 3*(self.blocks[min_index].shape.height/4)
+                goal_z = self.START_POSE.z + (self.blocks[min_index].shape.height/4) + self.GRIPPER_OFFSET
+
+                timeout_counter = 0
+                while abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD:
+                    timeout_counter += 1
+                    if timeout_counter > self.MAX_PSTEPS:
+                        self.verbose_action_results.append(ActionOutcomes.FAILED_MOVE_TIMEOUT)
+                        print('failed to complete that movement.')
+                        return
+                    p.stepSimulation()
+                    current_position = self.get_ee_position()
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
+                time.sleep(1/60)
+                self.close_gripper(self.blocks[min_index].shape.width)
+
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.Z_MAXSPEED)
+                goal_z = self.MOVEMENT_PLANE
+                while abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD:
+                    p.stepSimulation()
+                    current_position = self.get_ee_position()
+                print("done picking up "+str(self.blocks[min_index]))
+
+            else:
+                print("placing "+str(self.grasped_block))
+                current_position = self.get_ee_position()
+                current_speed    = self.STOPPED_SPEED + 1
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
+                self.get_block(self.grasped_block).set_z(-self.Z_MAXSPEED)
+                # check if we're about to place on top of the tower
+                large_block = self.get_block(Block.LARGE)
+                distance_from_large_block = self.distance_from_gripper(large_block)
+                goal_start = 0
+                if self.grasped_block != Block.LARGE and\
+                        distance_from_large_block < (large_block.shape.width/2 + self.get_block(self.grasped_block).shape.width/2):
+                    goal_start = get_tower_top()
+                goal_z = goal_start + self.START_POSE.z + (self.get_block(self.grasped_block).shape.height/4) + self.GRIPPER_OFFSET
+                timeout_counter = 0
+                while \
+                    abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD\
+                    and\
+                    current_speed > self.STOPPED_SPEED:
+                    timeout_counter += 1
+                    if timeout_counter > self.MAX_PSTEPS:
+                        self.verbose_action_results.append(ActionOutcomes.FAILED_MOVE_TIMEOUT)
+                        print('failed to complete that movement.')
+                        return
+                    p.stepSimulation()
+                    current_position = self.get_ee_position()
+                    current_speed = abs(self.get_ee_velocity())
+                self.get_block(self.grasped_block).set_z(0)
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
+                self.open_gripper()
+                set_tower_top(self.get_block(self.grasped_block))
+                self.grasped_block = Block.NONE
+                p.stepSimulation()
+                time.sleep(1/60)
                 p.stepSimulation()
 
-            p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
-            p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
-            self.get_block(self.grasped_block).set_xy_vel(0, 0)
-            p.stepSimulation()
-
-            if action.z_interact:
-                if self.grasped_block is Block.NONE:
-                    # we're not currently holding a block. Are we near one we can grab?
-                    min_index = 0
-                    for n in range(0, len(self.blocks)):
-                        if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
-                            min_index = n
-                    print("picking up "+str(self.blocks[min_index]))
-                    self.grasped_block = self.blocks[min_index].btype
-
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
-                    current_position = self.get_ee_position()
-
-                    #goal_z = self.START_POSE.z + 3*(self.blocks[min_index].shape.height/4)
-                    goal_z = self.START_POSE.z + (self.blocks[min_index].shape.height/4) + self.GRIPPER_OFFSET
-                    while abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD:
-                        p.stepSimulation()
-                        current_position = self.get_ee_position()
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
-                    time.sleep(1/60)
-                    self.close_gripper(self.blocks[min_index].shape.width)
-
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.Z_MAXSPEED)
-                    goal_z = self.MOVEMENT_PLANE
-                    while abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD:
-                        p.stepSimulation()
-                        current_position = self.get_ee_position()
-                    print("done picking up "+str(self.blocks[min_index]))
-
-                else:
-                    print("placing "+str(self.grasped_block))
-                    current_position = self.get_ee_position()
-                    current_speed    = self.STOPPED_SPEED + 1
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
-                    self.get_block(self.grasped_block).set_z(-self.Z_MAXSPEED)
-                    # check if we're about to place on top of the tower
-                    large_block = self.get_block(Block.LARGE)
-                    distance_from_large_block = self.distance_from_gripper(large_block)
-                    goal_start = 0
-                    if self.grasped_block != Block.LARGE and\
-                            distance_from_large_block < (large_block.shape.width/2 + self.get_block(self.grasped_block).shape.width/2):
-                        goal_start = get_tower_top()
-                    goal_z = goal_start + self.START_POSE.z + (self.get_block(self.grasped_block).shape.height/4) + self.GRIPPER_OFFSET
-                    while \
-                        abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD\
-                        and\
-                        current_speed > self.STOPPED_SPEED:
-                        p.stepSimulation()
-                        current_position = self.get_ee_position()
-                        current_speed = abs(self.get_ee_velocity())
-                    self.get_block(self.grasped_block).set_z(0)
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=0)
-                    self.open_gripper()
-                    set_tower_top(self.get_block(self.grasped_block))
-                    self.grasped_block = Block.NONE
+                p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.Z_MAXSPEED)
+                goal_z = self.MOVEMENT_PLANE
+                while abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD:
                     p.stepSimulation()
-                    time.sleep(1/60)
-                    p.stepSimulation()
-
-                    p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=self.Z_MAXSPEED)
-                    goal_z = self.MOVEMENT_PLANE
-                    while abs(max(goal_z, current_position.z) - min(goal_z, current_position.z)) > self.POSITION_THRESHOLD:
-                        p.stepSimulation()
-                        current_position = self.get_ee_position()
-                    print("done placing")
-
-
-        except Exception as e:
-            print("caught exception when setting joint motor control")
-            raise e
+                    current_position = self.get_ee_position()
+                print("done placing")
 
     def to_position_by_pose(self, action:Action):
         agent_state = AgentState(self.simplefetch)
@@ -326,6 +363,7 @@ class SimpleFetch:
         p.stepSimulation()
 
     def apply_action(self, action: Action):
+        self.verbose_action_results.clear()
         return self.to_position_by_velocity(action)
 
     def get_ee_position(self) -> Pose:

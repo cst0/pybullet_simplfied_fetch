@@ -22,6 +22,10 @@ class Block(Enum):
     LARGE = 3
 
 
+class ActionOutcomes(Enum):
+    FAILED_INTERACT_NO_OBJECT = 0
+    FAILED_MOVE_TIMEOUT = 10
+
 class Shape:
     def __init__(self, _length:float, _width:float, _height:float, _mesh:str=''):
         self.length = _length
@@ -131,11 +135,16 @@ class BlockObject:
 
 BLOCKTOWER:List[BlockObject] = []
 
-
 def get_tower_top():
     if len(BLOCKTOWER) == 0:
         return 0
     return BLOCKTOWER[-1].position().z + BLOCKTOWER[-1].shape.height/2
+
+
+def get_tower_top_type():
+    if len(BLOCKTOWER) == 0:
+        return Block.NONE
+    return BLOCKTOWER[-1].btype
 
 
 def set_tower_top(bo: BlockObject):
@@ -160,6 +169,10 @@ class Observation:
         self.block_small:BlockObject  = BlockObject(client, nonetype = True)
         self.block_medium:BlockObject = BlockObject(client, nonetype = True)
         self.block_large:BlockObject  = BlockObject(client, nonetype = True)
+        self.tower:List[BlockObject]  = []
+        self.walled_this_step:bool    = False
+        self.just_interacted:bool     = False
+        self.interact_success:bool    = False
 
     def __str__(self):
         return "Observing:"+str(self.gripper)
