@@ -152,6 +152,8 @@ class SimpleFetchEnv(gym.Env):
         obs = self.get_observations()
 
         self.finish = self.everything_in_tower
+        if self.finish:
+            self.shuffle_blocks()
         return obs, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
@@ -187,13 +189,14 @@ class SimpleFetchEnv(gym.Env):
                 reward += 10
             if r == ActionOutcomes.ACTION_JUST_RELEASED_BLOCK:
                 reward += 10
-        return reward
 
         if DEBUGMODE:
             print('* That step:')
             for r in self.simplefetch.verbose_action_results:
                 print(r)
             print('---')
+
+        return reward
 
 
     def place_objects(self, blocklist:List[Block], block_positions:List[Pose]=None):
@@ -236,6 +239,13 @@ class SimpleFetchEnv(gym.Env):
                 BLOCKTOWER.clear()
                 BLOCKTOWER.append(thisblock)
         p.stepSimulation()
+
+    def shuffle_blocks(self):
+        newblocks = []
+        for b in self.blocks:
+            newblocks.append(b.btype)
+        BLOCKTOWER.clear()
+        self.place_objects(newblocks)
 
     def generate_valid_table_position(self, block_positions):
         if self.simplefetch is None:
