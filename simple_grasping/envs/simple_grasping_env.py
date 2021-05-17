@@ -60,8 +60,8 @@ class SimpleFetchEnv(gym.Env):
                 0,0,0
                 ], dtype=np.float32)
 
-        # self.client = p.connect(p.GUI)
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
+        #self.client = p.connect(p.DIRECT)
 
         print("setup worldstate")
         self.worldstate              = Observation(self.client)
@@ -241,11 +241,17 @@ class SimpleFetchEnv(gym.Env):
         p.stepSimulation()
 
     def shuffle_blocks(self):
-        newblocks = []
-        for b in self.blocks:
-            newblocks.append(b.btype)
         BLOCKTOWER.clear()
-        self.place_objects(newblocks)
+        block_positions = []
+        for b in self.blocks:
+            pos = self.generate_valid_table_position(block_positions)
+            block_positions.append(pos)
+            pos.z = b.start_position.z
+            b.set_z(pos.z)
+            b.set_xy_pos(pos.x, pos.y)
+            if b.btype == Block.LARGE:
+                BLOCKTOWER.append(b)
+        p.stepSimulation()
 
     def generate_valid_table_position(self, block_positions):
         if self.simplefetch is None:
@@ -272,15 +278,16 @@ class SimpleFetchEnv(gym.Env):
         return returnme
 
 
-    def reset(self) -> Observation:
+    def reset(self, keep_blocks:bool=True) -> Observation:
         p.resetSimulation(self.client)
         p.setGravity(0, 0, -9.8)
         self.simplefetch = SimpleFetch(self.client)
 
-        saveblocks = self.blocks.copy()
-        self.blocks.clear()
-        for b in saveblocks:
-            self.place_objects([b.btype], [b.start_position])
+        if keep_blocks:
+            saveblocks = self.blocks.copy()
+            self.blocks.clear()
+            for b in saveblocks:
+                self.place_objects([b.btype], [b.start_position])
 
         self.observe()
         # this hack makes the rest of the grasping work better for some reason.
