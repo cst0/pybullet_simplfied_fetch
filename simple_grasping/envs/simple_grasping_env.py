@@ -7,7 +7,7 @@ from simple_grasping.standard_interfaces import *
 from typing import List
 
 
-DEBUGMODE = True
+DEBUGMODE = False
 
 
 class SimpleFetchEnv(gym.Env):

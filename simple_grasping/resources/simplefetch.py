@@ -218,7 +218,6 @@ class SimpleFetch:
                             self.MOVEMENT_PLANE
                             )
                 else:
-                    print('rejecting interaction: no object present')
                     action.z_interact = False
                     self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NO_OBJECT)
 
@@ -396,7 +395,6 @@ class SimpleFetch:
         current_top = get_tower_top_type()
         expected_top = Block.NONE
         # TODO: there's 100% a better way to do this, esp given that the blocks are ordered enums.
-        print('current top of tower '+str(current_top))
         if current_top == Block.NONE:
             if self.in_environment(Block.LARGE):
                 expected_top = Block.LARGE
