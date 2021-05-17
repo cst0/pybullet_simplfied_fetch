@@ -39,28 +39,28 @@ class SimpleFetchEnv(gym.Env):
 
         self.observation_space = Box(
             low=np.array([
-                -.5, -.5, -.5,  # gripper x, y, z
-                -.5, -.5, -.5,  # cube 1 x, y, z
-                -.5, -.5, -.5,  # cube 2 x, y, z
-                -.5, -.5, -.5,  # cube 3 x, y, z
+                -.5, -.5,  # gripper- cube 1 x, y, z
+                -.5, -.5,  # gripper- cube 2 x, y, z
+                -.5, -.5,  # gripper- cube 3 x, y, z
+                0,0,0
                 ], dtype=np.float32),
             high=np.array([
-                .5, .5, .5,     # gripper x, y, z
-                .5, .5, .5,     # cube 1 x, y, z
-                .5, .5, .5,     # cube 2 x, y, z
-                .5, .5, .5,     # cube 3 x, y, z
+                .5, .5,     # gripper x, y, z
+                .5, .5,     # cube 1 x, y, z
+                .5, .5,     # cube 2 x, y, z
+                3,3,3                
                 ], dtype=np.float32),
         )
 
         self.observation = np.array([
-                .0, .0, .0,  # gripper x, y, z
-                .0, .0, .0,  # cube 1 x, y, z
-                .0, .0, .0,  # cube 2 x, y, z
-                .0, .0, .0,  # cube 3 x, y, z
-                0            # gripper angle
+                .0, .0,  # gripper x, y, z
+                .0, .0,  # cube 1 x, y, z
+                .0, .0,  # cube 2 x, y, z
+                0,0,0
                 ], dtype=np.float32)
 
-        self.client = p.connect(p.GUI)
+        # self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
 
         print("setup worldstate")
         self.worldstate              = Observation(self.client)
@@ -92,6 +92,40 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_large  = self.get_block(Block.LARGE)
         self.tower:List[BlockObject] = BLOCKTOWER
 
+    def get_observations(self):
+        observations= []
+        observations.append(self.worldstate.gripper.x - self.worldstate.block_small.position().x)
+        observations.append(self.worldstate.gripper.y - self.worldstate.block_small.position().y)
+        observations.append(self.worldstate.gripper.x - self.worldstate.block_medium.position().x)
+        observations.append(self.worldstate.gripper.y - self.worldstate.block_medium.position().y)
+        observations.append(self.worldstate.gripper.x - self.worldstate.block_large.position().x)
+        observations.append(self.worldstate.gripper.y - self.worldstate.block_large.position().y)
+        if self.simplefetch.grasped_block == Block.SMALL:
+            observations.append(1)
+        elif self.simplefetch.grasped_block == Block.MEDIUM:
+            observations.append(2)
+        elif self.simplefetch.grasped_block == Block.LARGE:
+            observations.append(3)
+        else:
+            observations.append(0)
+        if get_tower_top_type() == Block.LARGE:
+            observations.append(3)
+        if get_tower_top_type() == Block.MEDIUM:
+            observations.append(2)
+        if get_tower_top_type() == Block.SMALL:
+            observations.append(1)
+        if get_tower_top_type() == Block.NONE:
+            observations.append(0)            
+        if get_tower_second_type() == Block.LARGE:
+            observations.append(3)
+        if get_tower_second_type() == Block.MEDIUM:
+            observations.append(2)
+        if get_tower_second_type() == Block.SMALL:
+            observations.append(1)
+        if get_tower_second_type() == Block.NONE:
+            observations.append(0)       
+        return np.asarray(observations)        
+
     def step(self, action: Action):
         self.steps_taken += 1
         self.simplefetch.inform_world_states(self.blocks)
@@ -107,10 +141,12 @@ class SimpleFetchEnv(gym.Env):
                           str(self.worldstate.block_large )
             print(statestring)
 
-        return self.worldstate, self.compute_reward(), self.finish, None
+        obs = self.get_observations()
+
+        return obs, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
-        reward = 0
+        reward = -1
 
         # two consistently maintained blocks that can be accessed for computing reward
         self.worldstate # Observation object
@@ -133,9 +169,10 @@ class SimpleFetchEnv(gym.Env):
             if r == ActionOutcomes.FAILED_MOVE_TIMEOUT:
                 reward -= 10
             if r == ActionOutcomes.ACTION_JUST_GRABBED_BLOCK:
-                reward += 1
+                reward += 10
             if r == ActionOutcomes.ACTION_JUST_RELEASED_BLOCK:
-                reward += 2
+                reward += 10
+        return reward
 
 
     def place_objects(self, blocklist:List[Block], block_positions:List[Pose]=None):
@@ -199,6 +236,7 @@ class SimpleFetchEnv(gym.Env):
 
         return returnme
 
+
     def reset(self) -> Observation:
         p.resetSimulation(self.client)
         p.setGravity(0, 0, -9.8)
@@ -224,7 +262,9 @@ class SimpleFetchEnv(gym.Env):
                     _z_interact=False))
 
         #return self.observation_space
-        return self.worldstate
+        obs = self.get_observations()
+     
+        return obs
 
     def close(self):
         p.disconnect(self.client)

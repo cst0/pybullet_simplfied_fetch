@@ -10,44 +10,16 @@ class SequentialAgent:
         self.stepindex += 1
 
         if self.stepindex == 1:
-            print('** GRAB LARGE BLOCK')
-            return Action(
-                    _x_dist=observation.block_large.position().x - observation.gripper.x,
-                    _y_dist=observation.block_large.position().y - observation.gripper.y,
-                    _z_interact=True)
+            return Action(_x_dist=observation.block_large.position().x, _y_dist=observation.block_large.position().y, _z_interact=True)
         if self.stepindex == 2:
-            print('** DROP LARGE BLOCK')
-            return Action(
-                    _x_dist=-observation.gripper.x,
-                    _y_dist=-observation.gripper.y,
-                    _z_interact=True
-                )
+            return Action(_x_dist=-observation.gripper.x, _y_dist=-observation.gripper.y, _z_interact=True)
         if self.stepindex == 3:
-            print('** GRAB MEDIUM BLOCK')
-            return Action(
-                    _x_dist=observation.block_medium.position().x - observation.gripper.x,
-                    _y_dist=observation.block_medium.position().y - observation.gripper.y,
-                    _z_interact=True)
+            return Action(_x_dist=observation.block_medium.position().x, _y_dist=observation.block_medium.position().y, _z_interact=True)
         if self.stepindex == 4:
-            print('** DROP MEDIUM BLOCK')
-            return Action(
-                    _x_dist=-observation.gripper.x,
-                    _y_dist=-observation.gripper.y,
-                    _z_interact=True
-                )
+            return Action(_x_dist=-observation.gripper.x, _y_dist=-observation.gripper.y, _z_interact=True)
         if self.stepindex == 5:
-            print('** GRAB SMALL BLOCK')
-            return Action(
-                    _x_dist=observation.block_small.position().x - observation.gripper.x,
-                    _y_dist=observation.block_small.position().y - observation.gripper.y,
-                    _z_interact=True)
+            return Action(_x_dist=observation.block_small.position().x, _y_dist=observation.block_small.position().y, _z_interact=True)
         if self.stepindex == 6:
-            print('** DROP SMALL BLOCK')
-            return Action(
-                    _x_dist=-observation.gripper.x,
-                    _y_dist=-observation.gripper.y,
-                    _z_interact=True
-                )
-        if self.stepindex % 2:
-            return Action(0.0001,0.0001,False)
-        return Action(-0.0001,-0.0001,False)
+            return Action(_x_dist=-observation.gripper.x, _y_dist=-observation.gripper.y, _z_interact=True)
+
+        return Action(0,0,False)
