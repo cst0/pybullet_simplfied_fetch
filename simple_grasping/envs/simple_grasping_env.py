@@ -173,6 +173,9 @@ class SimpleFetchEnv(gym.Env):
             block_positions[n].theta = 0
             thisblock = BlockObject(self.client, Pose(block_positions[n].x, block_positions[n].y, block_positions[n].z), blocklist[n])
             self.blocks.append(thisblock)
+            # make sure large block starts as base of tower
+            if thisblock.btype == Block.LARGE:
+                BLOCKTOWER.append(thisblock)
         p.stepSimulation()
 
     def generate_valid_table_position(self, block_positions):
