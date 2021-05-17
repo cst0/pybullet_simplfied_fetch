@@ -20,7 +20,7 @@ class SimpleFetchEnv(gym.Env):
         self.table_y_max = 0.15
         self.padding_space = 0.01
         self.TABLE_HEIGHT = 0.725
-        self.NO_SPAWN_IN_CENTER = True
+        self.NO_SPAWN_IN_CENTER = False
 
         self.blocks:List[BlockObject] = []
 
