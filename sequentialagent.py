@@ -50,6 +50,5 @@ class SequentialAgent:
                     _z_interact=True
                 )
 
-        print('all sequences completed, sleep')
-        sleep(10000)
-        return Action(-0.0001,-0.0001,False)
+        self.stepindex = 0
+        return self.choose_action(observation)

@@ -10,11 +10,13 @@ def main():
             Block.MEDIUM,
             Block.LARGE
         ])
-    observation = env.reset()
+    env.reset()
+    observation = env.worldstate
     finish = False
-    while not finish:
+    while True:
         action = agent.choose_action(observation)
         observation, _, finish, _ = env.step(action)
+        observation = env.worldstate
         if finish:
             print("Told to finish-- loop will now terminate")
 

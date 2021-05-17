@@ -153,6 +153,12 @@ def get_tower_top_type():
     return BLOCKTOWER[-1].btype
 
 
+def get_tower_second_type():
+    if len(BLOCKTOWER) == 0 or len(BLOCKTOWER) == 1:
+        return Block.NONE
+    return BLOCKTOWER[-2].btype
+
+
 def set_tower_top(bo: BlockObject):
     BLOCKTOWER.append(bo)
 
