@@ -128,6 +128,8 @@ class SimpleFetchEnv(gym.Env):
         for r in self.simplefetch.verbose_action_results:
             if r == ActionOutcomes.FAILED_INTERACT_NO_OBJECT:
                 reward -= 1
+            if r == ActionOutcomes.FAILED_INTERACT_STACKED_OBJECT:
+                reward -= 2
             if r == ActionOutcomes.FAILED_MOVE_OUT_OF_BOUNDS:
                 reward -= 5
             if r == ActionOutcomes.FAILED_MOVE_TIMEOUT:

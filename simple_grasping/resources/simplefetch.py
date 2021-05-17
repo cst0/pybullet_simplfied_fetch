@@ -198,22 +198,19 @@ class SimpleFetch:
 
         self.goto_xy_goal(goal)
 
+        # snap to a more relevant goal location
         if action.z_interact:
             print('interact')
             min_index = 0
             for n in range(0, len(self.blocks)):
                 if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
                     if self.blocks[n] is self.grasped_block:
-                        print('ignoring '+str(self.blocks[n]))
                         pass
                     else:
-                        print('min is now '+str(self.blocks[n]))
                         min_index = n
             if len(self.blocks) != 0:
                 nearest_block = self.blocks[min_index]
-                print('blocklen != 0, nearest is '+str(nearest_block))
                 if self.distance_from_gripper(nearest_block) < max(self.ACCEPTABLE_GRAB_SLOP, nearest_block.shape.width/2):
-                    print('within grasp slop')
                     # cool, this is a block we are in-range to interact with.
                     goal = Pose(
                             nearest_block.position().x,
@@ -221,7 +218,7 @@ class SimpleFetch:
                             self.MOVEMENT_PLANE
                             )
                 else:
-                    print('outside grasp slop')
+                    print('rejecting interaction: no object present')
                     action.z_interact = False
                     self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NO_OBJECT)
 
@@ -236,6 +233,11 @@ class SimpleFetch:
                     if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
                         min_index = n
                 print("picking up "+str(self.blocks[min_index]))
+                for towered_block in BLOCKTOWER:
+                    if towered_block.btype == self.blocks[min_index].btype:
+                        # this is a block we've already stacked
+                        self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_STACKED_OBJECT)
+                        return
                 self.grasped_block = self.blocks[min_index].btype
 
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
