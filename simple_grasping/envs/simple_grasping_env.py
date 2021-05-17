@@ -23,6 +23,7 @@ class SimpleFetchEnv(gym.Env):
         self.NO_SPAWN_IN_CENTER = False
 
         self.blocks:List[BlockObject] = []
+        self.everything_in_tower = False
 
         self.action_space = Box(
             low=np.array([
@@ -84,6 +85,12 @@ class SimpleFetchEnv(gym.Env):
 
         return BlockObject(self.client, nonetype=True)
 
+    def check_everything_in_tower(self):
+        for b in self.blocks:
+            if b not in BLOCKTOWER:
+                return False
+        return True
+
     def observe(self):
         self.worldstate.gripper      = self.simplefetch.get_ee_position()
         self.worldstate.grasping     = self.simplefetch.grasped_block
@@ -91,6 +98,7 @@ class SimpleFetchEnv(gym.Env):
         self.worldstate.block_medium = self.get_block(Block.MEDIUM)
         self.worldstate.block_large  = self.get_block(Block.LARGE)
         self.tower:List[BlockObject] = BLOCKTOWER
+        self.everything_in_tower = self.check_everything_in_tower()
 
     def get_observations(self):
         observations= []
@@ -143,6 +151,7 @@ class SimpleFetchEnv(gym.Env):
 
         obs = self.get_observations()
 
+        self.finish = self.everything_in_tower
         return obs, self.compute_reward(), self.finish, None
 
     def compute_reward(self):
