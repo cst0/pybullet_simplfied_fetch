@@ -289,8 +289,10 @@ class SimpleFetch:
                     goal_start = get_tower_top()
                     if get_tower_top_type() != Block.NONE:
                         onblock = True
-                        self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NOT_TOWER)
-                        return
+
+                if not onblock:
+                    self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NOT_TOWER)
+                    return
 
                 goal_z = goal_start + self.START_POSE.z + (self.get_block(self.grasped_block).shape.height/4) + self.GRIPPER_OFFSET
                 timeout_counter = 0
@@ -403,26 +405,26 @@ class SimpleFetch:
             elif self.in_environment(Block.SMALL):
                 expected_top = Block.SMALL
             else:
-                print('not sure what block to expect for Block.NONE')
+                print('not sure what block to expect for Block.NONE given your env.')
         elif current_top == Block.LARGE:
             if self.in_environment(Block.MEDIUM):
                 expected_top = Block.MEDIUM
             elif self.in_environment(Block.SMALL):
                 expected_top = Block.SMALL
             else:
-                print('not sure what block to expect for Block.LARGE')
+                print('not sure what block to expect for Block.LARGE given your env.')
         elif current_top == Block.MEDIUM:
             if self.in_environment(Block.SMALL):
                 expected_top = Block.SMALL
             else:
-                print('not sure what block to expect for Block.MEDIUM')
+                print('not sure what block to expect for Block.MEDIUM given your env.')
         elif current_top == Block.SMALL:
             for b in self.blocks:
                 if b not in BLOCKTOWER:
                     # trying to grab the smallest block when there's other blocks around? nah.
                     return True
             else:
-                print('not sure what block to expect here for Block.SMALL')
+                print('not sure what block to expect here for Block.SMALL given your env.')
 
         # given the current top of the tower, we know what we think the top should now be.
         # is this not it?
