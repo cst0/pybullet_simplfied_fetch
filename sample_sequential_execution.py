@@ -4,7 +4,7 @@ import gym
 from simple_grasping.standard_interfaces import *
 from time import sleep
 from agents import ActorCriticPolicy
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 def main():
     episode = 0
     time_step = 0
@@ -74,7 +74,7 @@ def main():
             if episode > 1000:
                 agent.save_model(0, 0, 1)
                 break
-    
+
     plt.plot(avg_reward)
     plt.savefig("reward.png")
 
