@@ -232,12 +232,18 @@ class SimpleFetch:
                 for n in range(0, len(self.blocks)):
                     if self.distance_from_gripper(self.blocks[n]) < self.distance_from_gripper(self.blocks[min_index]):
                         min_index = n
-                print("picking up "+str(self.blocks[min_index]))
                 for towered_block in BLOCKTOWER:
                     if towered_block.btype == self.blocks[min_index].btype:
                         # this is a block we've already stacked
+                        print('cannot interact with already-stacked object.')
                         self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_STACKED_OBJECT)
                         return
+                    if self.out_of_order_grab(self.blocks[min_index]):
+                        # this is a block which is out of order to grab
+                        print('cannot interact with objects out of order.')
+                        self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_WRONG_ORDER)
+                        return
+                print("picking up "+str(self.blocks[min_index]))
                 self.grasped_block = self.blocks[min_index].btype
 
                 p.setJointMotorControl2(self.simplefetch, self.Z_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=-self.Z_MAXSPEED)
@@ -283,6 +289,9 @@ class SimpleFetch:
                     goal_start = get_tower_top()
                     if get_tower_top_type() != Block.NONE:
                         onblock = True
+                        self.verbose_action_results.append(ActionOutcomes.FAILED_INTERACT_NOT_TOWER)
+                        return
+
                 goal_z = goal_start + self.START_POSE.z + (self.get_block(self.grasped_block).shape.height/4) + self.GRIPPER_OFFSET
                 timeout_counter = 0
                 while \
@@ -367,6 +376,50 @@ class SimpleFetch:
     def out_of_bounds(self):
         state = AgentState(self.simplefetch)
         return abs(state.pose.x) > self.X_LIMIT + self.GRIPPER_BOUNDS_THRESHOLD or abs(state.pose.y) > self.Y_LIMIT + self.GRIPPER_BOUNDS_THRESHOLD
+
+    def in_tower(self, checkme):
+        for b in BLOCKTOWER:
+            if b.btype.value == checkme.value:
+                return True
+        return False
+
+    def out_of_order_grab(self, attempt_placement:BlockObject):
+        # order is always large -> medium -> small.
+        # is the block the agent is about to grab/release the wrong one to do here?
+        current_top = get_tower_top_type()
+        expected_top = Block.NONE
+        # TODO: there's 100% a better way to do this, esp given that the blocks are ordered enums.
+        if current_top == Block.NONE:
+            if self.in_tower(Block.LARGE):
+                expected_top = Block.LARGE
+            elif self.in_tower(Block.MEDIUM):
+                expected_top = Block.MEDIUM
+            elif self.in_tower(Block.SMALL):
+                expected_top = Block.SMALL
+            else:
+                print('not sure what block to expect here, is there anything in your tower?')
+        elif current_top == Block.LARGE:
+            if self.in_tower(Block.MEDIUM):
+                expected_top = Block.MEDIUM
+            elif self.in_tower(Block.SMALL):
+                expected_top = Block.SMALL
+            else:
+                print('not sure what block to expect here, is there anything in your tower?')
+        elif current_top == Block.MEDIUM:
+            if self.in_tower(Block.SMALL):
+                expected_top = Block.SMALL
+            else:
+                print('not sure what block to expect here, is there anything in your tower?')
+        elif current_top == Block.SMALL:
+            for b in self.blocks:
+                if b not in BLOCKTOWER:
+                    # trying to grab the smallest block when there's other blocks around? nah.
+                    return True
+            else:
+                print('not sure what block to expect here, is there anything in your tower?')
+
+        # given the current top of the tower, we know what we think the top should now be.
+        return expected_top == attempt_placement.btype
 
     def reset_position(self):
         p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT,

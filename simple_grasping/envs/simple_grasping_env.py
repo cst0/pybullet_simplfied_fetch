@@ -7,7 +7,7 @@ from simple_grasping.standard_interfaces import *
 from typing import List
 
 
-DEBUGMODE = False
+DEBUGMODE = True
 
 
 class SimpleFetchEnv(gym.Env):
@@ -99,13 +99,13 @@ class SimpleFetchEnv(gym.Env):
         p.stepSimulation()
         self.observe()
 
-        if DEBUGMODE:
-            statestring = str(self.worldstate.gripper     ) + ", "+\
-                          str(self.worldstate.grasping    ) + ", "+\
-                          str(self.worldstate.block_small ) + ", "+\
-                          str(self.worldstate.block_medium) + ", "+\
-                          str(self.worldstate.block_large )
-            print(statestring)
+        #if DEBUGMODE:
+        #    statestring = str(self.worldstate.gripper     ) + ", "+\
+        #                  str(self.worldstate.grasping    ) + ", "+\
+        #                  str(self.worldstate.block_small ) + ", "+\
+        #                  str(self.worldstate.block_medium) + ", "+\
+        #                  str(self.worldstate.block_large )
+        #    print(statestring)
 
         return self.worldstate, self.compute_reward(), self.finish, None
 
@@ -130,6 +130,10 @@ class SimpleFetchEnv(gym.Env):
                 reward -= 1
             if r == ActionOutcomes.FAILED_INTERACT_STACKED_OBJECT:
                 reward -= 2
+            if r == ActionOutcomes.FAILED_INTERACT_NOT_TOWER:
+                reward -= 3
+            if r == ActionOutcomes.FAILED_INTERACT_WRONG_ORDER:
+                reward -= 4
             if r == ActionOutcomes.FAILED_MOVE_OUT_OF_BOUNDS:
                 reward -= 5
             if r == ActionOutcomes.FAILED_MOVE_TIMEOUT:
@@ -138,6 +142,12 @@ class SimpleFetchEnv(gym.Env):
                 reward += 1
             if r == ActionOutcomes.ACTION_JUST_RELEASED_BLOCK:
                 reward += 2
+
+        if DEBUGMODE:
+            print('* That step:')
+            for r in self.simplefetch.verbose_action_results:
+                print(r)
+            print('---')
 
 
     def place_objects(self, blocklist:List[Block], block_positions:List[Pose]=None):
@@ -177,6 +187,7 @@ class SimpleFetchEnv(gym.Env):
             self.blocks.append(thisblock)
             # make sure large block starts as base of tower
             if thisblock.btype == Block.LARGE:
+                BLOCKTOWER.clear()
                 BLOCKTOWER.append(thisblock)
         p.stepSimulation()
 
