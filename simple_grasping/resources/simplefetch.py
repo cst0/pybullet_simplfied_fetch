@@ -383,43 +383,50 @@ class SimpleFetch:
                 return True
         return False
 
+    def in_environment(self, checkme:Block):
+        for b in self.blocks:
+            if b.btype.value == checkme.value:
+                return True
+
     def out_of_order_grab(self, attempt_placement:BlockObject):
         # order is always large -> medium -> small.
         # is the block the agent is about to grab/release the wrong one to do here?
         current_top = get_tower_top_type()
         expected_top = Block.NONE
         # TODO: there's 100% a better way to do this, esp given that the blocks are ordered enums.
+        print('current top of tower '+str(current_top))
         if current_top == Block.NONE:
-            if self.in_tower(Block.LARGE):
+            if self.in_environment(Block.LARGE):
                 expected_top = Block.LARGE
-            elif self.in_tower(Block.MEDIUM):
+            elif self.in_environment(Block.MEDIUM):
                 expected_top = Block.MEDIUM
-            elif self.in_tower(Block.SMALL):
+            elif self.in_environment(Block.SMALL):
                 expected_top = Block.SMALL
             else:
-                print('not sure what block to expect here, is there anything in your tower?')
+                print('not sure what block to expect for Block.NONE')
         elif current_top == Block.LARGE:
-            if self.in_tower(Block.MEDIUM):
+            if self.in_environment(Block.MEDIUM):
                 expected_top = Block.MEDIUM
-            elif self.in_tower(Block.SMALL):
+            elif self.in_environment(Block.SMALL):
                 expected_top = Block.SMALL
             else:
-                print('not sure what block to expect here, is there anything in your tower?')
+                print('not sure what block to expect for Block.LARGE')
         elif current_top == Block.MEDIUM:
-            if self.in_tower(Block.SMALL):
+            if self.in_environment(Block.SMALL):
                 expected_top = Block.SMALL
             else:
-                print('not sure what block to expect here, is there anything in your tower?')
+                print('not sure what block to expect for Block.MEDIUM')
         elif current_top == Block.SMALL:
             for b in self.blocks:
                 if b not in BLOCKTOWER:
                     # trying to grab the smallest block when there's other blocks around? nah.
                     return True
             else:
-                print('not sure what block to expect here, is there anything in your tower?')
+                print('not sure what block to expect here for Block.SMALL')
 
         # given the current top of the tower, we know what we think the top should now be.
-        return expected_top == attempt_placement.btype
+        # is this not it?
+        return not expected_top == attempt_placement.btype
 
     def reset_position(self):
         p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT,
