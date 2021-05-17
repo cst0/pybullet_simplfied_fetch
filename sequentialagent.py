@@ -1,6 +1,6 @@
 import numpy as np
 from time import sleep
-from simple_grasping.standard_interfaces import Action, Observation
+from simple_grasping.standard_interfaces import Action, BLOCKTOWER, Observation
 
 class SequentialAgent:
     def __init__(self):
@@ -9,6 +9,7 @@ class SequentialAgent:
     def choose_action(self, observation:Observation) -> Action:
         self.stepindex += 1
 
+        print("Current tower state: "+str([x.btype for x in BLOCKTOWER]))
         if self.stepindex == 1:
             print('** GRAB LARGE BLOCK')
             return Action(
@@ -31,8 +32,8 @@ class SequentialAgent:
         if self.stepindex == 4:
             print('** DROP MEDIUM BLOCK')
             return Action(
-                    _x_dist=-observation.gripper.x,
-                    _y_dist=-observation.gripper.y,
+                    _x_dist=observation.block_large.position().x - observation.gripper.x,
+                    _y_dist=observation.block_large.position().y - observation.gripper.y,
                     _z_interact=True
                 )
         if self.stepindex == 5:
@@ -44,10 +45,11 @@ class SequentialAgent:
         if self.stepindex == 6:
             print('** DROP SMALL BLOCK')
             return Action(
-                    _x_dist=-observation.gripper.x,
-                    _y_dist=-observation.gripper.y,
+                    _x_dist=observation.block_large.position().x - observation.gripper.x,
+                    _y_dist=observation.block_large.position().y - observation.gripper.y,
                     _z_interact=True
                 )
-        if self.stepindex % 2:
-            return Action(0.0001,0.0001,False)
+
+        print('all sequences completed, sleep')
+        sleep(10000)
         return Action(-0.0001,-0.0001,False)
