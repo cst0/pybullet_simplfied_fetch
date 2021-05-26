@@ -24,6 +24,7 @@ class SimpleFetch:
         self.STOPPED_SPEED = 0.001
         self.Z_MAXSPEED = 0.01
         self.POSITION_THRESHOLD = 0.0001
+        self.VELOCITY_THRESHOLD = 0.05
         self.GRIPPER_BOUNDS_THRESHOLD = 0.05
         self.GRIPPER_OFFSET = 0.0025 # 0.934 when in active collision with object
         self.ACCEPTABLE_GRAB_SLOP = 0.01
@@ -116,6 +117,11 @@ class SimpleFetch:
             x_vel = (x_diff / sum_diff) * self.MAXSPEED * x_dir if x_diff != 0 else 0
             y_vel = (y_diff / sum_diff) * self.MAXSPEED * y_dir if y_diff != 0 else 0
 
+            if x_vel < self.VELOCITY_THRESHOLD or y_vel < self.VELOCITY_THRESHOLD:
+                # change in velocity is basically 0, so assume 0.
+                x_finished = True
+                y_finished = True
+
             p.setJointMotorControl2(self.simplefetch, self.X_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=x_vel)
             p.setJointMotorControl2(self.simplefetch, self.Y_AXIS_JOINT, p.VELOCITY_CONTROL, targetVelocity=y_vel)
 
@@ -127,7 +133,6 @@ class SimpleFetch:
             # If we got there on any axis, set that axis to 0 and the other to max just to wrap things up here
             if x_diff < self.POSITION_THRESHOLD:
                 x_finished = True
-
             if y_diff < self.POSITION_THRESHOLD:
                 y_finished = True
 
