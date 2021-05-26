@@ -49,7 +49,7 @@ class SimpleFetchEnv(gym.Env):
                 .5, .5,     # gripper x, y, z
                 .5, .5,     # cube 1 x, y, z
                 .5, .5,     # cube 2 x, y, z
-                3,3,3                
+                3,3,3
                 ], dtype=np.float32),
         )
 
@@ -101,7 +101,7 @@ class SimpleFetchEnv(gym.Env):
         self.everything_in_tower = self.check_everything_in_tower()
 
     def get_observations(self):
-        observations= []
+        observations = []
         observations.append(self.worldstate.gripper.x - self.worldstate.block_small.position().x)
         observations.append(self.worldstate.gripper.y - self.worldstate.block_small.position().y)
         observations.append(self.worldstate.gripper.x - self.worldstate.block_medium.position().x)
@@ -123,7 +123,7 @@ class SimpleFetchEnv(gym.Env):
         if get_tower_top_type() == Block.SMALL:
             observations.append(1)
         if get_tower_top_type() == Block.NONE:
-            observations.append(0)            
+            observations.append(0)
         if get_tower_second_type() == Block.LARGE:
             observations.append(3)
         if get_tower_second_type() == Block.MEDIUM:
@@ -131,8 +131,8 @@ class SimpleFetchEnv(gym.Env):
         if get_tower_second_type() == Block.SMALL:
             observations.append(1)
         if get_tower_second_type() == Block.NONE:
-            observations.append(0)       
-        return np.asarray(observations)        
+            observations.append(0)
+        return np.asarray(observations)
 
     def step(self, action: Action):
         self.steps_taken += 1
@@ -305,7 +305,7 @@ class SimpleFetchEnv(gym.Env):
 
         #return self.observation_space
         obs = self.get_observations()
-     
+
         return obs
 
     def close(self):
